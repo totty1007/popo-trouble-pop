@@ -738,9 +738,12 @@ const RE_BREAK_AFTER = /[、。，．！？：；」』）】・]/;
 const RE_HONORIFIC = /[ごお御]/;
 // 補助動詞・丁寧表現の前は文節の切れ目として改行してよい
 const AUX_HEADS = ["いただ", "くださ", "ござい", "おり", "いたし", "まいり", "申し"];
+// 複合動詞の後項。ここで切ると「申し／上げます」のように動詞が分断される
+const COMPOUND_TAILS = ["上げ", "上が", "下げ", "合わせ", "込み", "直し", "出し"];
 // 数量＋単位（90分・9月・5名）や英字＋カタカナ語（QRコード）を分断しないための判定
 const RE_LATIN_NUM = /[0-9０-９A-Za-zＡ-Ｚａ-ｚ]/;
 const RE_JP = /[一-鿿々ぁ-ゖァ-ヺ]/;
+const RE_KANJI = /[一-鿿々]/;
 
 function mustJoinBefore(prev, ch) {
   // 「90|分」「QR|コード」の向きだけを禁止する。逆向き（「は|19:00」）は
@@ -752,10 +755,16 @@ function canBreakBefore(text, i) {
   const prev = text[i - 1];
   const ch = text[i];
   if (RE_NO_LINE_START.test(ch)) return false; // 行頭禁則
+  if (COMPOUND_TAILS.some((w) => text.startsWith(w, i))) return false;
+  // 「・9月15日（火）」のような箇条書きの先頭の中黒は、行末に取り残さない
+  if (prev === "・" && i === 1) return false;
   if (RE_BREAK_AFTER.test(prev)) return true; // 句読点・中黒の後は切れる
   if (!RE_HIRAGANA.test(prev)) return false; // 熟語・カタカナ語の途中では切らない
-  if (RE_HONORIFIC.test(prev)) return false;
+  if (RE_HONORIFIC.test(prev)) return false; // 「ご|理解」「お|願い」を防ぐ
   if (RE_WORD_START.test(ch)) return true; // ひらがな→語頭 は文節の切れ目
+  // 接頭語「ご」「お」「御」＋漢字 は語頭なので、その前では改行してよい
+  // （「つなげて|ご利用いただく」。これを許さないと1語が長くなり文字が縮む）
+  if (RE_HONORIFIC.test(ch) && RE_KANJI.test(text[i + 1] || "")) return true;
   return AUX_HEADS.some((w) => text.startsWith(w, i));
 }
 
