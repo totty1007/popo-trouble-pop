@@ -23,8 +23,8 @@ const LOGO_OPTIONS = [
   { value: "logo_popo_illustration.png", label: "ポポラマーマ（イラスト）" },
   { value: "logo_popo_text.jpg", label: "ポポラマーマ（文字のみ）" },
   { value: "logo_popo_badge.png", label: "ポポラマーマ（丸バッジ）" },
-  { value: "logo_bar_horizontal.jpg", label: "ポポラマーマバル（横）" },
-  { value: "logo_bar_vertical.jpg", label: "ポポラマーマバル（縦）" },
+  { value: "logo_bar_horizontal.jpg", label: "ポポラマーマ_バル（横）" },
+  { value: "logo_bar_vertical.jpg", label: "ポポラマーマ_バル（縦）" },
   { value: "logo_choiwa.jpg", label: "和ぱすた ぽぽらまーま" },
 ];
 
@@ -233,7 +233,7 @@ function updatePaperSize() {
 // 客向けの正式表記に合わせる。
 const BRAND_SEPARATOR = {
   "ポポラマーマ": "　",
-  "ポポラマーマバル": "　",
+  "ポポラマーマ_バル": "　",
   "和ぱすた　ぽぽらまーま": "　",
 };
 
