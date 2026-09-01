@@ -238,7 +238,7 @@ textarea { resize: vertical; }
   position: absolute;
   right: 4%;
   bottom: 4%;
-  width: 22%;
+  max-width: 22%;
   height: 12%;
   background: rgba(255, 255, 255, 0.94);
   border-radius: 10px;
@@ -246,7 +246,9 @@ textarea { resize: vertical; }
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 6%;
+  /* padding は % 指定にすると「枠の幅」ではなく「A4ページの幅」を基準に
+     計算されてしまい(6% = 約48px)、ロゴが枠内で極端に縮む。px で固定する。 */
+  padding: 8px;
   box-sizing: border-box;
 }
 .preview-logo-badge.visible { display: flex; }
