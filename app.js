@@ -25,7 +25,7 @@ const LOGO_OPTIONS = [
   { value: "logo_popo_badge.png", label: "ポポラマーマ（丸バッジ）" },
   { value: "logo_bar_horizontal.jpg", label: "ポポラマーマバル（横）" },
   { value: "logo_bar_vertical.jpg", label: "ポポラマーマバル（縦）" },
-  { value: "logo_choiwa.jpg", label: "ちょい和" },
+  { value: "logo_choiwa.jpg", label: "和ぱすた ぽぽらまーま" },
 ];
 
 async function init() {
@@ -223,6 +223,13 @@ function updatePaperSize() {
 //             B縦だけは21-31%に飾りが散っているため下げたまま。
 //  - bodyBottomWithLogo: ロゴを表示する時だけ本文下端を上げる。ロゴ未選択なら
 //             本文が使える高さを削らない（横向きは高さが最も苦しいため）。
+// 本文には「ブランド名＋店舗名」がそのまま印字される。既定は区切りなしだが
+// （例: ポポラマーマ + 葛西店 → ポポラマーマ葛西店）、正式店名に全角スペースが
+// 入るブランドがあるため、ここで区切り文字を明示する。
+const BRAND_SEPARATOR = {
+  "和ぱすた　ぽぽらまーま": "　",
+};
+
 const BACKGROUND_LAYOUTS = {
   standard_vertical: {
     headingTop: 4.8, headingHeight: 11, bodyTop: 20, bodyBottom: 78,
@@ -494,12 +501,18 @@ function formatDateJp(isoDate) {
   return `${d.getMonth() + 1}月${d.getDate()}日（${week[d.getDay()]}）`;
 }
 
+function getStoreBrand() {
+  const sel = $("#storeSelect");
+  if (!sel.value) return "";
+  const opt = sel.selectedOptions[0];
+  return opt ? opt.dataset.brand : "ポポラマーマ";
+}
+
 function getStoreFull() {
   const sel = $("#storeSelect");
   if (!sel.value) return "各店舗";
-  const opt = sel.selectedOptions[0];
-  const brand = opt ? opt.dataset.brand : "ポポラマーマ";
-  return brand + sel.value;
+  const brand = getStoreBrand();
+  return brand + (BRAND_SEPARATOR[brand] || "") + sel.value;
 }
 
 // 必須項目（optional指定のないフィールド）が埋まっているかを確認し、
@@ -641,12 +654,27 @@ function bodyLineHeight(size) {
 }
 
 // 本文を1行ずつ要素に分けて流し込む（text-wrap:balance を段落単位で効かせるため）。
-function renderBodyLines(container, text) {
+// ブランド名（keepTogether）は途中で改行させない。「和ぱすた　ぽぽらまーま」が
+// 「ぽぽらまー／ま」と分断されるのを防ぐ。ブランド名と店舗名の間の全角スペースでの
+// 改行は許すので、店舗名まで含めて丸ごと1行に追い出すことはしない。
+function renderBodyLines(container, text, keepTogether) {
   container.textContent = "";
   text.split("\n").forEach((line) => {
     const el = document.createElement("div");
     el.className = "preview-body-line";
-    el.textContent = line;
+    if (keepTogether && line.includes(keepTogether)) {
+      line.split(keepTogether).forEach((part, i) => {
+        if (i > 0) {
+          const span = document.createElement("span");
+          span.className = "nowrap";
+          span.textContent = keepTogether;
+          el.appendChild(span);
+        }
+        if (part) el.appendChild(document.createTextNode(part));
+      });
+    } else {
+      el.textContent = line;
+    }
     container.appendChild(el);
   });
 }
@@ -702,7 +730,7 @@ function updatePreview() {
   const bracket = selectedFormat.bracket;
   headingEl.textContent = heading ? `${bracket}${heading}${mirrorBracket(bracket)}` : "";
   headingEl.style.display = heading ? "flex" : "none";
-  renderBodyLines(bodyTextEl, bodyText);
+  renderBodyLines(bodyTextEl, bodyText, getStoreBrand());
 
   // 見出しを先に確定し、そのサイズを本文の上限に反映する。独立に決めると
   // 「本文44px・見出し42px」のように大小関係が逆転して情報の階層が崩れる。

@@ -255,6 +255,9 @@ textarea { resize: vertical; }
   line-break: strict;
 }
 
+/* 店舗名を改行で分断させない */
+.preview-body-line .nowrap { white-space: nowrap; }
+
 .preview-logo-badge {
   position: absolute;
   /* 位置と大きさは背景画像の装飾を避けるため、バリアントごとにJSから設定する */
