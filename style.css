@@ -258,13 +258,20 @@ textarea { resize: vertical; }
 /* 店舗名を改行で分断させない */
 .preview-body-line .nowrap { white-space: nowrap; }
 
+/* 特に伝えたい内容の強調。カラー印刷前提の赤字＋太字。 */
+.preview-body-line .em {
+  color: #c8102e;
+  font-weight: 700;
+}
+.preview-body-line.em-line {
+  color: #c8102e;
+  font-weight: 700;
+}
+
 .preview-logo-badge {
   position: absolute;
-  /* 位置と大きさは背景画像の装飾を避けるため、バリアントごとにJSから設定する */
-  right: var(--logo-right, 40%);
-  bottom: var(--logo-bottom, 6%);
-  max-width: var(--logo-max-width, 20%);
-  height: var(--logo-height, 11%);
+  /* 位置と大きさは背景画像の装飾を避けつつロゴの縦横比に合わせるため、
+     layoutLogoBadge() がpxで直接設定する */
   background: rgba(255, 255, 255, 0.94);
   border-radius: 10px;
   display: none;
@@ -291,5 +298,38 @@ textarea { resize: vertical; }
     box-shadow: none;
     margin: 0 auto;
     transform: none !important;
+    /* これが無いとChromeは既定で背景を印刷しないため、店舗が印刷ダイアログの
+       「背景のグラフィック」をONにしないとPOPの柄が出ない。強調の赤字も含めて
+       意図した色でそのまま出るよう強制する。 */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
+}
+
+/* 強調する行の指定パネル（印刷対象外） */
+#emphasisControls:empty { display: none; }
+.emphasis-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.emphasis-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.emphasis-item input { margin-top: 3px; flex-shrink: 0; }
+.emphasis-item .text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.emphasis-item.is-auto .text::after {
+  content: "（数値を自動強調中）";
+  color: #c8102e;
+  font-size: 11px;
 }

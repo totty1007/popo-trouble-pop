@@ -141,6 +141,7 @@ function populateFormatSelect() {
     const fmt = FORMATS.find((f) => f.id === sel.value) || null;
     selectedFormat = fmt;
     dayListState = {};
+    emphasizedLines = new Set();
     renderFieldsForFormat(fmt);
     updatePreview();
   });
@@ -217,7 +218,8 @@ function updatePaperSize() {
 //  - bodySide: 本文の左右マージン。縦は左17.6%まで装飾があるため17%が限界。
 //              横は12%まで装飾が無いので広げ、折り返しを減らして文字を大きくする。
 //  - logo: 縦は右下がトマト/ワインの大型イラストで空きが無いため「下中央」、
-//          横は右下に空きがあるため従来どおり「右下」。いずれも装飾との重なり0%。
+//          横は右下に空きがあるため「右下」。いずれも装飾との重なり0%。枠は縦横比で
+//          形が変わる（縦向きは横長ロゴ用56%x11%と縦長ロゴ用20%x17%の2種）。
 //  - bodyTop: 見出し帯直下の飾り罫の下端を実測して決めた値。A縦は17-18%に、
 //             横2枚は25-31%に横罫があり、そこを越えた位置から本文を始める。
 //             B縦だけは21-31%に飾りが散っているため下げたまま。
@@ -234,22 +236,24 @@ const BACKGROUND_LAYOUTS = {
   standard_vertical: {
     headingTop: 4.8, headingHeight: 11, bodyTop: 20, bodyBottom: 78,
     bodyBottomWithLogo: 78, bodySide: 17,
-    logo: { right: 40, bottom: 6, height: 11, maxWidth: 20 },
+    logo: { anchor: "center", bottom: 10, maxWidth: 56, maxHeight: 11,
+            tall: { anchor: "center", bottom: 4, maxWidth: 20, maxHeight: 17 } },
   },
   standard_horizontal: {
     headingTop: 9, headingHeight: 13, bodyTop: 37, bodyBottom: 92,
     bodyBottomWithLogo: 88, bodySide: 12,
-    logo: { right: 14, bottom: 4, height: 7, maxWidth: 22 },
+    logo: { anchor: "right", right: 13, bottom: 4, maxWidth: 74, maxHeight: 16 },
   },
   bar_vertical: {
     headingTop: 4.8, headingHeight: 9, bodyTop: 32, bodyBottom: 78,
     bodyBottomWithLogo: 78, bodySide: 17,
-    logo: { right: 40, bottom: 6, height: 11, maxWidth: 20 },
+    logo: { anchor: "center", bottom: 10, maxWidth: 56, maxHeight: 11,
+            tall: { anchor: "center", bottom: 4, maxWidth: 20, maxHeight: 17 } },
   },
   bar_horizontal: {
     headingTop: 10, headingHeight: 13, bodyTop: 33, bodyBottom: 90,
     bodyBottomWithLogo: 88, bodySide: 12,
-    logo: { right: 14, bottom: 4, height: 7, maxWidth: 22 },
+    logo: { anchor: "right", right: 13, bottom: 4, maxWidth: 74, maxHeight: 16 },
   },
 };
 
@@ -268,15 +272,54 @@ function updateBackground() {
   const page = $("#previewPage");
   headingEl.style.top = layout.headingTop + "%";
   headingEl.style.height = layout.headingHeight + "%";
-  const logoShown = Boolean($("#logoSelect").value);
-  const bodyBottom = logoShown ? layout.bodyBottomWithLogo : layout.bodyBottom;
+  const logoBox = layoutLogoBadge(page, layout);
+  const bodyBottom = logoBox
+    ? Math.min(layout.bodyBottomWithLogo, logoBox.topPercent - 1)
+    : layout.bodyBottom;
   bodyEl.style.top = layout.bodyTop + "%";
   bodyEl.style.bottom = 100 - bodyBottom + "%";
   page.style.setProperty("--body-side", layout.bodySide + "%");
-  page.style.setProperty("--logo-right", layout.logo.right + "%");
-  page.style.setProperty("--logo-bottom", layout.logo.bottom + "%");
-  page.style.setProperty("--logo-height", layout.logo.height + "%");
-  page.style.setProperty("--logo-max-width", layout.logo.maxWidth + "%");
+}
+
+// ロゴ枠の大きさは「縦横比が違っても見た目の大きさが揃う」ようにする。
+// 枠の形を固定すると、横長ロゴ(比4.5)は高さが、縦長ロゴ(比0.64)は幅が潰れて
+// 最大4倍もの差が出るため、目標面積から縦横を逆算し、装飾なし領域に収まるよう
+// クランプする。戻り値はロゴ枠の上端位置(%)で、本文下端の計算に使う。
+const LOGO_TARGET_AREA = 12000; // px^2 (A4を96dpiとしたページ座標)
+const LOGO_TALL_RATIO = 1.5; // これ未満を「縦長」として別枠に切り替える
+
+function layoutLogoBadge(page, layout) {
+  const badge = $("#previewLogoBadge");
+  const img = $("#previewLogoImg");
+  if (!$("#logoSelect").value || !img.naturalWidth || !img.naturalHeight) {
+    return null;
+  }
+  const ratio = img.naturalWidth / img.naturalHeight;
+  const region = ratio < LOGO_TALL_RATIO && layout.logo.tall ? layout.logo.tall : layout.logo;
+  const pw = page.offsetWidth;
+  const ph = page.offsetHeight;
+  const pad = 16; // .preview-logo-badge の padding 8px × 2
+  const maxW = (pw * region.maxWidth) / 100 - pad;
+  const maxH = (ph * region.maxHeight) / 100 - pad;
+
+  let h = Math.sqrt(LOGO_TARGET_AREA / ratio);
+  let w = h * ratio;
+  if (w > maxW) { w = maxW; h = w / ratio; }
+  if (h > maxH) { h = maxH; w = h * ratio; }
+
+  const boxW = w + pad;
+  const boxH = h + pad;
+  badge.style.width = boxW + "px";
+  badge.style.height = boxH + "px";
+  badge.style.bottom = (ph * region.bottom) / 100 + "px";
+  if (region.anchor === "right") {
+    badge.style.right = (pw * region.right) / 100 + "px";
+    badge.style.left = "auto";
+  } else {
+    badge.style.left = (pw - boxW) / 2 + "px";
+    badge.style.right = "auto";
+  }
+  return { topPercent: 100 - region.bottom - (boxH / ph) * 100 };
 }
 
 function updateLogoBadge() {
@@ -288,6 +331,9 @@ function updateLogoBadge() {
     img.src = "";
     return;
   }
+  // ロゴ枠の大きさは画像の縦横比から決めるため、読み込み完了後に再計算する。
+  // （naturalWidthが0のまま採寸すると枠が潰れる）
+  img.onload = () => updatePreview();
   img.src = "assets/" + value;
   badge.classList.add("visible");
 }
@@ -572,6 +618,24 @@ function updatePrintButtonState() {
   }
 }
 
+// 「特に伝えたい内容」の強調。置換した値を制御文字で囲んでおき、描画時にspanへ変える。
+// 本文は textContent で流し込むため、HTMLを混ぜずに範囲を持ち回せる方法が必要。
+const EM_OPEN = "\u0001";
+const EM_CLOSE = "\u0002";
+// 店舗が入力した「時刻・日付・数値」は、そのPOPで一番伝えたい事実なので既定で強調する。
+const AUTO_EMPHASIS_TYPES = ["time", "date", "number"];
+
+function em(v) {
+  return v ? EM_OPEN + v + EM_CLOSE : v;
+}
+
+function stripEm(text) {
+  return text.split(EM_OPEN).join("").split(EM_CLOSE).join("");
+}
+
+let autoEmphasis = true; // 数値の自動強調（店舗側で解除可能）
+let emphasizedLines = new Set(); // 行ごと強調に指定された行（強調記号を除いた本文で保持）
+
 function buildValues(fmt) {
   const values = { storeFull: getStoreFull() };
   fmt.fields.forEach((field) => {
@@ -582,11 +646,13 @@ function buildValues(fmt) {
         .map((r) => {
           let change = r.changeType || "";
           if (change === "自由記述") change = r.freeText || "";
-          return `・${formatDateJp(r.date)}　${change}`;
+          return `・${em(formatDateJp(r.date))}　${change}`;
         });
       values[field.key] = lines.join("\n");
     } else {
-      values[field.key] = getFieldValue(field);
+      const v = getFieldValue(field);
+      values[field.key] =
+        autoEmphasis && AUTO_EMPHASIS_TYPES.includes(field.type) ? em(v) : v;
     }
   });
 
@@ -662,21 +728,107 @@ function renderBodyLines(container, text, keepTogether) {
   text.split("\n").forEach((line) => {
     const el = document.createElement("div");
     el.className = "preview-body-line";
-    if (keepTogether && line.includes(keepTogether)) {
-      line.split(keepTogether).forEach((part, i) => {
-        if (i > 0) {
-          const span = document.createElement("span");
-          span.className = "nowrap";
-          span.textContent = keepTogether;
-          el.appendChild(span);
-        }
-        if (part) el.appendChild(document.createTextNode(part));
-      });
+    // 行ごと強調に指定された行は行全体を赤字にし、値だけの部分強調は打ち消す
+    if (emphasizedLines.has(stripEm(line))) {
+      el.classList.add("em-line");
+      appendPlain(el, stripEm(line), keepTogether);
     } else {
-      el.textContent = line;
+      appendWithEmphasis(el, line, keepTogether);
     }
     container.appendChild(el);
   });
+}
+
+// ブランド名だけ改行禁止のspanに包みつつ、テキストノードとして流し込む
+function appendPlain(el, text, keepTogether) {
+  if (keepTogether && text.includes(keepTogether)) {
+    text.split(keepTogether).forEach((part, i) => {
+      if (i > 0) {
+        const span = document.createElement("span");
+        span.className = "nowrap";
+        span.textContent = keepTogether;
+        el.appendChild(span);
+      }
+      if (part) el.appendChild(document.createTextNode(part));
+    });
+  } else if (text) {
+    el.appendChild(document.createTextNode(text));
+  }
+}
+
+// EM_OPEN〜EM_CLOSE で囲まれた範囲を強調spanにして流し込む
+function appendWithEmphasis(el, line, keepTogether) {
+  let rest = line;
+  for (;;) {
+    const open = rest.indexOf(EM_OPEN);
+    if (open < 0) {
+      appendPlain(el, rest, keepTogether);
+      return;
+    }
+    appendPlain(el, rest.slice(0, open), keepTogether);
+    const close = rest.indexOf(EM_CLOSE, open + 1);
+    const span = document.createElement("span");
+    span.className = "em";
+    span.textContent = close < 0 ? rest.slice(open + 1) : rest.slice(open + 1, close);
+    el.appendChild(span);
+    if (close < 0) return;
+    rest = rest.slice(close + 1);
+  }
+}
+
+// 「強調する行」の指定UI。本文の行が入力で変わるため毎回組み直すが、
+// 指定は行テキストで保持しているので該当行が残っていればチェックも残る。
+function buildEmphasisControls(bodyText) {
+  const box = $("#emphasisControls");
+  box.textContent = "";
+  if (!selectedFormat) return;
+
+  const label = document.createElement("label");
+  label.textContent = "④ 強調する行（任意）";
+  box.appendChild(label);
+
+  const autoWrap = document.createElement("label");
+  autoWrap.className = "emphasis-item";
+  const autoCb = document.createElement("input");
+  autoCb.type = "checkbox";
+  autoCb.checked = autoEmphasis;
+  autoCb.addEventListener("change", () => {
+    autoEmphasis = autoCb.checked;
+    updatePreview();
+  });
+  const autoText = document.createElement("span");
+  autoText.className = "text";
+  autoText.textContent = "入力した時刻・日付・数値を赤字にする";
+  autoWrap.appendChild(autoCb);
+  autoWrap.appendChild(autoText);
+  box.appendChild(autoWrap);
+
+  const list = document.createElement("div");
+  list.className = "emphasis-list";
+  const seen = new Set();
+  bodyText.split("\n").forEach((line) => {
+    const plain = stripEm(line);
+    if (!plain.trim() || seen.has(plain)) return;
+    seen.add(plain);
+    const item = document.createElement("label");
+    item.className = "emphasis-item";
+    if (autoEmphasis && line.includes(EM_OPEN)) item.classList.add("is-auto");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = emphasizedLines.has(plain);
+    cb.addEventListener("change", () => {
+      if (cb.checked) emphasizedLines.add(plain);
+      else emphasizedLines.delete(plain);
+      updatePreview();
+    });
+    const text = document.createElement("span");
+    text.className = "text";
+    text.textContent = plain;
+    item.appendChild(cb);
+    item.appendChild(text);
+    list.appendChild(item);
+  });
+  box.appendChild(list);
 }
 
 // 表示エリアからはみ出す場合、無言で見切れさせず収まるまでフォントサイズを段階的に
@@ -713,6 +865,7 @@ function updatePreview() {
     headingEl.textContent = "";
     headingEl.style.display = "none";
     renderBodyLines(bodyTextEl, "フォーマットを選択すると、ここにプレビューが表示されます。");
+    buildEmphasisControls("");
     fitTextToBox(bodyEl, bodyTextEl, 32, BODY_MIN_SIZE, bodyLineHeight);
     textOverflowing = false;
     fitPreviewScale();
@@ -731,6 +884,7 @@ function updatePreview() {
   headingEl.textContent = heading ? `${bracket}${heading}${mirrorBracket(bracket)}` : "";
   headingEl.style.display = heading ? "flex" : "none";
   renderBodyLines(bodyTextEl, bodyText, getStoreBrand());
+  buildEmphasisControls(bodyText);
 
   // 見出しを先に確定し、そのサイズを本文の上限に反映する。独立に決めると
   // 「本文44px・見出し42px」のように大小関係が逆転して情報の階層が崩れる。
@@ -738,7 +892,7 @@ function updatePreview() {
   const headingSize = heading ? parseFloat(headingEl.style.fontSize) : Infinity;
   const bodyCap = Math.max(
     24,
-    Math.min(bodyCapForLength(bodyText.replace(/\s/g, "").length), headingSize - 8)
+    Math.min(bodyCapForLength(stripEm(bodyText).replace(/\s/g, "").length), headingSize - 8)
   );
   const bodyFit = fitTextToBox(bodyEl, bodyTextEl, bodyCap, BODY_MIN_SIZE, bodyLineHeight);
   textOverflowing = !headingFit || !bodyFit;
