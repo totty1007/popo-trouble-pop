@@ -6,6 +6,18 @@ let dayListState = {}; // { fieldKey: [ {date,changeType,freeText}, ... ] }
 
 const $ = (sel) => document.querySelector(sel);
 
+const AREA_ORDER = [
+  "第1エリア",
+  "第2エリア",
+  "第3エリア",
+  "第4エリア",
+  "第5エリア",
+  "第6エリア",
+  "九州北エリア",
+  "九州南エリア",
+];
+const NO_AREA_LABEL = "エリア未設定・その他";
+
 async function init() {
   try {
     const res = await fetch("stores.json", { cache: "no-store" });
@@ -13,11 +25,41 @@ async function init() {
   } catch (e) {
     STORES = [];
   }
+  populateAreaSelect();
   populateStoreSelect();
   populateFormatSelect();
   bindGlobalControls();
   renderFieldsForFormat(null);
   updatePreview();
+}
+
+function populateAreaSelect() {
+  const sel = $("#areaSelect");
+  sel.innerHTML = "";
+  const allOpt = document.createElement("option");
+  allOpt.value = "";
+  allOpt.textContent = "-- 全エリア（絞り込みなし） --";
+  sel.appendChild(allOpt);
+
+  const present = new Set(STORES.map((s) => s.area).filter(Boolean));
+  AREA_ORDER.filter((a) => present.has(a)).forEach((area) => {
+    const opt = document.createElement("option");
+    opt.value = area;
+    opt.textContent = area;
+    sel.appendChild(opt);
+  });
+
+  if (STORES.some((s) => !s.area)) {
+    const opt = document.createElement("option");
+    opt.value = NO_AREA_LABEL;
+    opt.textContent = NO_AREA_LABEL;
+    sel.appendChild(opt);
+  }
+
+  sel.addEventListener("change", () => {
+    populateStoreSelect();
+    updatePreview();
+  });
 }
 
 function populateStoreSelect() {
@@ -28,8 +70,15 @@ function populateStoreSelect() {
   placeholder.textContent = "-- 店舗を選択 --";
   sel.appendChild(placeholder);
 
+  const areaFilter = $("#areaSelect").value;
+  const filtered = STORES.filter((s) => {
+    if (!areaFilter) return true;
+    if (areaFilter === NO_AREA_LABEL) return !s.area;
+    return s.area === areaFilter;
+  });
+
   const groups = {};
-  STORES.forEach((s) => {
+  filtered.forEach((s) => {
     const brand = s.brand || "ポポラマーマ";
     if (!groups[brand]) groups[brand] = [];
     groups[brand].push(s);
@@ -49,8 +98,6 @@ function populateStoreSelect() {
       });
     sel.appendChild(og);
   });
-
-  sel.addEventListener("change", updatePreview);
 }
 
 function populateFormatSelect() {
@@ -89,6 +136,7 @@ function populateFormatSelect() {
 }
 
 function bindGlobalControls() {
+  $("#storeSelect").addEventListener("change", updatePreview);
   $("#orientation").addEventListener("change", updatePaperSize);
   $("#printBtn").addEventListener("click", () => window.print());
   window.addEventListener("resize", () => {
@@ -130,7 +178,19 @@ function updatePaperSize() {
     document.head.appendChild(styleTag);
   }
   styleTag.textContent = `@page { size: A4 ${orientation}; margin: 0; }`;
+  updateBackground();
   fitPreviewScale();
+}
+
+function updateBackground() {
+  const orientation = $("#orientation").value; // portrait | landscape
+  const sel = $("#storeSelect");
+  const opt = sel.selectedOptions[0];
+  const brand = opt ? opt.dataset.brand : "";
+  const isBar = brand === "ポポラマーマバル";
+  const orientationKey = orientation === "landscape" ? "horizontal" : "vertical";
+  const file = (isBar ? "popo_bar_" : "popo_standard_") + orientationKey + ".jpg";
+  $("#previewPage").style.backgroundImage = `url("assets/${file}")`;
 }
 
 function renderFieldsForFormat(fmt) {
@@ -411,6 +471,8 @@ function updatePreview() {
   const preview = $("#previewPage");
   const headingEl = $("#previewHeading");
   const bodyEl = $("#previewBody");
+
+  updateBackground();
 
   if (!selectedFormat) {
     headingEl.textContent = "";

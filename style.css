@@ -178,22 +178,33 @@ textarea { resize: vertical; }
 }
 
 .preview-page {
-  background: #fff;
+  background-color: #fff;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
   box-shadow: 0 4px 18px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: center;
-  padding: 60px 50px;
-  gap: 28px;
+  gap: 18px;
   flex-shrink: 0;
   transform: scale(var(--preview-scale, 1));
   transform-origin: top center;
+  box-sizing: border-box;
 }
 
-.preview-page.a4-fixed.portrait { width: 210mm; height: 297mm; }
-.preview-page.a4-fixed.landscape { width: 297mm; height: 210mm; }
+.preview-page.a4-fixed.portrait {
+  width: 210mm;
+  height: 297mm;
+  padding: 62mm 26mm 20mm;
+}
+.preview-page.a4-fixed.landscape {
+  width: 297mm;
+  height: 210mm;
+  padding: 46mm 40mm 16mm;
+}
 
 .preview-heading {
   font-size: 34px;
