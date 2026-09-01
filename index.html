@@ -41,6 +41,18 @@
             <option value="landscape">横</option>
           </select>
         </div>
+        <div>
+          <label for="designSelect">デザイン</label>
+          <select id="designSelect">
+            <option value="A">A（トマト・パスタ柄）</option>
+            <option value="B">B（ワイン・チーズ柄）</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label for="logoSelect">ロゴ（右下に表示）</label>
+        <select id="logoSelect"></select>
       </div>
 
       <button id="printBtn" class="btn-primary">🖨 印刷する</button>
@@ -50,6 +62,9 @@
       <div id="previewPage" class="preview-page a4-fixed portrait">
         <div id="previewHeading" class="preview-heading"></div>
         <div id="previewBody" class="preview-body"></div>
+        <div id="previewLogoBadge" class="preview-logo-badge">
+          <img id="previewLogoImg" src="" alt="" />
+        </div>
       </div>
     </section>
   </main>

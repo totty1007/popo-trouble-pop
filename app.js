@@ -18,6 +18,16 @@ const AREA_ORDER = [
 ];
 const NO_AREA_LABEL = "エリア未設定・その他";
 
+const LOGO_OPTIONS = [
+  { value: "", label: "ロゴなし（表示しない）" },
+  { value: "logo_popo_illustration.png", label: "ポポラマーマ（イラスト）" },
+  { value: "logo_popo_text.jpg", label: "ポポラマーマ（文字のみ）" },
+  { value: "logo_popo_badge.png", label: "ポポラマーマ（丸バッジ）" },
+  { value: "logo_bar_horizontal.jpg", label: "ポポラマーマバル（横）" },
+  { value: "logo_bar_vertical.jpg", label: "ポポラマーマバル（縦）" },
+  { value: "logo_choiwa.jpg", label: "ちょい和" },
+];
+
 async function init() {
   try {
     const res = await fetch("stores.json", { cache: "no-store" });
@@ -28,6 +38,7 @@ async function init() {
   populateAreaSelect();
   populateStoreSelect();
   populateFormatSelect();
+  populateLogoSelect();
   bindGlobalControls();
   renderFieldsForFormat(null);
   updatePreview();
@@ -135,9 +146,22 @@ function populateFormatSelect() {
   });
 }
 
+function populateLogoSelect() {
+  const sel = $("#logoSelect");
+  sel.innerHTML = "";
+  LOGO_OPTIONS.forEach((o) => {
+    const opt = document.createElement("option");
+    opt.value = o.value;
+    opt.textContent = o.label;
+    sel.appendChild(opt);
+  });
+}
+
 function bindGlobalControls() {
   $("#storeSelect").addEventListener("change", updatePreview);
   $("#orientation").addEventListener("change", updatePaperSize);
+  $("#designSelect").addEventListener("change", updatePaperSize);
+  $("#logoSelect").addEventListener("change", updateLogoBadge);
   $("#printBtn").addEventListener("click", () => window.print());
   window.addEventListener("resize", () => {
     layoutViewport();
@@ -192,13 +216,11 @@ const BACKGROUND_LAYOUTS = {
 
 function updateBackground() {
   const orientation = $("#orientation").value; // portrait | landscape
-  const sel = $("#storeSelect");
-  const opt = sel.selectedOptions[0];
-  const brand = opt ? opt.dataset.brand : "";
-  const isBar = brand === "ポポラマーマバル";
+  const design = $("#designSelect").value; // A | B
+  const isB = design === "B";
   const orientationKey = orientation === "landscape" ? "horizontal" : "vertical";
-  const variantKey = (isBar ? "bar_" : "standard_") + orientationKey;
-  const file = (isBar ? "popo_bar_" : "popo_standard_") + orientationKey + ".jpg";
+  const variantKey = (isB ? "bar_" : "standard_") + orientationKey;
+  const file = (isB ? "popo_bar_" : "popo_standard_") + orientationKey + ".jpg";
   $("#previewPage").style.backgroundImage = `url("assets/${file}")`;
 
   const layout = BACKGROUND_LAYOUTS[variantKey];
@@ -208,6 +230,19 @@ function updateBackground() {
   headingEl.style.height = layout.headingHeight + "%";
   bodyEl.style.top = layout.bodyTop + "%";
   bodyEl.style.bottom = 100 - layout.bodyBottom + "%";
+}
+
+function updateLogoBadge() {
+  const value = $("#logoSelect").value;
+  const badge = $("#previewLogoBadge");
+  const img = $("#previewLogoImg");
+  if (!value) {
+    badge.classList.remove("visible");
+    img.src = "";
+    return;
+  }
+  img.src = "assets/" + value;
+  badge.classList.add("visible");
 }
 
 function renderFieldsForFormat(fmt) {
