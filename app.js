@@ -89,7 +89,6 @@ function populateFormatSelect() {
 }
 
 function bindGlobalControls() {
-  $("#paperSize").addEventListener("change", updatePaperSize);
   $("#orientation").addEventListener("change", updatePaperSize);
   $("#printBtn").addEventListener("click", () => window.print());
   window.addEventListener("resize", () => {
@@ -120,10 +119,9 @@ function fitPreviewScale() {
 }
 
 function updatePaperSize() {
-  const size = $("#paperSize").value; // a4 | a5
   const orientation = $("#orientation").value; // portrait | landscape
   const preview = $("#previewPage");
-  preview.className = "preview-page " + size + " " + orientation;
+  preview.className = "preview-page a4-fixed " + orientation;
 
   let styleTag = document.getElementById("printPageStyle");
   if (!styleTag) {
@@ -131,8 +129,7 @@ function updatePaperSize() {
     styleTag.id = "printPageStyle";
     document.head.appendChild(styleTag);
   }
-  const pageSize = size === "a5" ? "A5" : "A4";
-  styleTag.textContent = `@page { size: ${pageSize} ${orientation}; margin: 0; }`;
+  styleTag.textContent = `@page { size: A4 ${orientation}; margin: 0; }`;
   fitPreviewScale();
 }
 
