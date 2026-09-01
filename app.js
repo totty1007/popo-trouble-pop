@@ -350,12 +350,6 @@ function getStoreFull() {
   return brand + sel.value;
 }
 
-function isCarboBrand() {
-  const sel = $("#storeSelect");
-  const opt = sel.selectedOptions[0];
-  return opt && opt.dataset.brand === "カルボラボ";
-}
-
 function buildValues(fmt) {
   const values = { storeFull: getStoreFull() };
   fmt.fields.forEach((field) => {
@@ -415,12 +409,8 @@ function renderBody(fmt, values) {
 
 function updatePreview() {
   const preview = $("#previewPage");
-  const logoArea = $("#previewLogo");
   const headingEl = $("#previewHeading");
   const bodyEl = $("#previewBody");
-
-  const carbo = isCarboBrand();
-  logoArea.style.display = carbo ? "flex" : "none";
 
   if (!selectedFormat) {
     headingEl.textContent = "";

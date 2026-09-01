@@ -195,16 +195,6 @@ textarea { resize: vertical; }
 .preview-page.a4-fixed.portrait { width: 210mm; height: 297mm; }
 .preview-page.a4-fixed.landscape { width: 297mm; height: 210mm; }
 
-.preview-logo {
-  display: none;
-  justify-content: center;
-}
-.preview-logo img {
-  max-width: 60%;
-  max-height: 140px;
-  object-fit: contain;
-}
-
 .preview-heading {
   font-size: 34px;
   font-weight: 800;
