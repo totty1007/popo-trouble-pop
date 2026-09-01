@@ -1,0 +1,233 @@
+:root {
+  --brand-red: #d0342c;
+  --ink: #222;
+  --bg: #f4f5f7;
+  --panel-bg: #ffffff;
+  --border: #dcdfe4;
+  --accent: #1a73e8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.app-header {
+  padding: 20px 24px 8px;
+}
+.app-header h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+.app-header .sub {
+  margin: 0;
+  color: #555;
+  font-size: 13px;
+}
+
+.layout {
+  display: flex;
+  gap: 20px;
+  padding: 16px 24px 24px;
+  align-items: stretch;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.controls {
+  flex: 0 0 360px;
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+select, input[type="text"], input[type="date"], input[type="time"], input[type="number"], textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+textarea { resize: vertical; }
+
+.hint {
+  color: #888;
+  font-size: 13px;
+  margin: 0;
+}
+
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #eee;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.checkbox-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.checkbox-item input { width: auto; }
+
+.daylist-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.daylist-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.daylist-row {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1.4fr auto;
+  gap: 6px;
+  align-items: center;
+}
+.btn-secondary {
+  align-self: flex-start;
+  background: #eef2ff;
+  border: 1px solid #c9d6ff;
+  color: var(--accent);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.btn-remove {
+  background: #fff0f0;
+  border: 1px solid #f0c0c0;
+  color: #c0392b;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.paper-controls {
+  flex-direction: row;
+  gap: 16px;
+}
+.paper-controls > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.btn-primary {
+  margin-top: 6px;
+  background: var(--brand-red);
+  color: #fff;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-primary:hover { opacity: 0.92; }
+
+.preview-wrap {
+  flex: 1 1 500px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px;
+  background: #e9eaee;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.preview-page {
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 50px;
+  gap: 28px;
+  flex-shrink: 0;
+  transform: scale(var(--preview-scale, 1));
+  transform-origin: top center;
+}
+
+.preview-page.a4.portrait { width: 210mm; height: 297mm; }
+.preview-page.a4.landscape { width: 297mm; height: 210mm; }
+.preview-page.a5.portrait { width: 148mm; height: 210mm; }
+.preview-page.a5.landscape { width: 210mm; height: 148mm; }
+
+.preview-logo {
+  display: none;
+  justify-content: center;
+}
+.preview-logo img {
+  max-width: 60%;
+  max-height: 140px;
+  object-fit: contain;
+}
+
+.preview-heading {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.preview-body {
+  font-size: 19px;
+  line-height: 2;
+  white-space: pre-wrap;
+  max-width: 90%;
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .layout { padding: 0; display: block; }
+  .preview-wrap { padding: 0; background: #fff; display: block; overflow: visible; }
+  .preview-page {
+    box-shadow: none;
+    margin: 0 auto;
+    transform: none !important;
+  }
+}

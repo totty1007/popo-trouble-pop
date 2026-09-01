@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>トラブル対応POP印刷</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header no-print">
+    <h1>トラブル対応POP印刷</h1>
+    <p class="sub">店舗とフォーマットを選び、必要な項目を入力すると、その場でPOPを作成して印刷できます。</p>
+  </header>
+
+  <main class="layout">
+    <section class="panel controls no-print">
+      <div class="control-group">
+        <label for="storeSelect">① 店舗を選択</label>
+        <select id="storeSelect"></select>
+      </div>
+
+      <div class="control-group">
+        <label for="formatSelect">② フォーマットを選択</label>
+        <select id="formatSelect"></select>
+      </div>
+
+      <div class="control-group" id="fieldsContainer">
+        <p class="hint">フォーマットを選択すると、入力項目がここに表示されます。</p>
+      </div>
+
+      <div class="control-group paper-controls">
+        <div>
+          <label for="paperSize">用紙サイズ</label>
+          <select id="paperSize">
+            <option value="a4">A4</option>
+            <option value="a5">A5</option>
+          </select>
+        </div>
+        <div>
+          <label for="orientation">向き</label>
+          <select id="orientation">
+            <option value="portrait">縦</option>
+            <option value="landscape">横</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="printBtn" class="btn-primary">🖨 印刷する</button>
+    </section>
+
+    <section class="panel preview-wrap">
+      <div id="previewPage" class="preview-page a4 portrait">
+        <div id="previewLogo" class="preview-logo">
+          <img src="assets/carbolab_logo.png" alt="Carbo*LAB." />
+        </div>
+        <div id="previewHeading" class="preview-heading"></div>
+        <div id="previewBody" class="preview-body"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="formats.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
