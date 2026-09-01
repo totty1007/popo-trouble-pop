@@ -225,6 +225,10 @@ textarea { resize: vertical; }
      2行見出しが見出し帯に入らず不要に自動縮小される。1.2 を明示する。 */
   line-height: 1.2;
   overflow: hidden;
+  /* 見出しも文節境界だけで折り返す（本文と同じ規則） */
+  word-break: keep-all;
+  overflow-wrap: normal;
+  text-wrap: balance;
 }
 
 /* 本文は「枠」と「テキスト」を分離し、枠側をflexにして縦中央揃えにする。
@@ -249,10 +253,15 @@ textarea { resize: vertical; }
 .preview-body-line {
   white-space: pre-wrap;
   text-wrap: balance;
-  /* 「11:00〜15:00」のような分割不可の文字列が途中で割れないようにする */
+  /* 和文の既定の折り返しは「本日／は」「終／了」のように文節や熟語の途中で
+     切れてしまう。keep-all で自動改行を止め、addBreakOpportunities() が入れた
+     文節境界(U+200B)だけで改行させる。収まらないかたまりは溢れるが、
+     widthCapFor() が幅からフォントサイズの上限を決めるので溢れない。 */
+  word-break: keep-all;
   overflow-wrap: normal;
-  word-break: normal;
   line-break: strict;
+  /* 掲示物として離れた位置から読むため、字間をわずかに開ける */
+  letter-spacing: 0.02em;
 }
 
 /* 店舗名を改行で分断させない */
@@ -291,21 +300,55 @@ textarea { resize: vertical; }
 
 @media print {
   .no-print { display: none !important; }
-  body { background: #fff; }
-  .layout { padding: 0; display: block; }
-  .preview-wrap { padding: 0; background: #fff; display: block; overflow: visible; }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    background: #fff !important;
+  }
+
+  /* layoutViewport() が .layout にインラインで height を入れるため、!important で
+     打ち消す必要がある。これが残るとPOPの前に空のブロックが1ページ分出力され、
+     「1枚目が白紙、2枚目にPOP」という症状になる。 */
+  .layout {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  /* .preview-wrap は .panel も持つので枠線・角丸・背景が付いている。
+     枠線が1pxでもA4の高さを超えて2枚目が出るため、すべて消す。 */
+  .preview-wrap {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
   .preview-page {
-    box-shadow: none;
-    margin: 0 auto;
+    margin: 0 !important;
+    box-shadow: none !important;
     transform: none !important;
+    overflow: hidden !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
     /* これが無いとChromeは既定で背景を印刷しないため、店舗が印刷ダイアログの
-       「背景のグラフィック」をONにしないとPOPの柄が出ない。強調の赤字も含めて
-       意図した色でそのまま出るよう強制する。 */
+       「背景のグラフィック」をONにしないとPOPの柄が出ず、白黒の文字だけになる。 */
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 }
-
 /* 強調する行の指定パネル（印刷対象外） */
 #emphasisControls:empty { display: none; }
 .emphasis-list {

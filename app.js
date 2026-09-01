@@ -719,6 +719,94 @@ function bodyLineHeight(size) {
   return 1.75;
 }
 
+// ===== 日本語の改行位置の制御 =====
+// 既定の折り返しは和文のどこでも改行するため、「本日 / は」「終 / 了」のように
+// 文節や熟語の途中で切れる。CSS側を word-break: keep-all にして自動改行を止め、
+// ここで入れた改行可能位置(U+200B)だけで改行させる。
+// ただし keep-all でも「数字↔和文」の境界は改行されてしまうので（「90 / 分制」）、
+// そこには結合子(U+2060)を入れて改行を禁止する。
+const ZWSP = "​"; // U+200B 改行してよい位置
+const WJ = "⁠"; // U+2060 改行してはいけない位置
+const RE_HIRAGANA = /[ぁ-ゖ]/;
+// 語頭になりうる文字（漢字・カタカナ・英数字・開き括弧）
+const RE_WORD_START = /[一-鿿々ァ-ヺｦ-ﾝ0-9０-９A-Za-zＡ-Ｚａ-ｚ「『（【〈《]/;
+// 行頭に置いてはいけない文字（句読点・閉じ括弧・長音符・繰返し記号・小書き）
+const RE_NO_LINE_START = /[、。，．！？：；」』）】〉》・…ー〜～々ゝゞぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮ]/;
+// この文字の直後は改行してよい（句読点・閉じ括弧・中黒）
+const RE_BREAK_AFTER = /[、。，．！？：；」』）】・]/;
+// 接頭の「ご」「お」「御」の直後で切ると「ご|理解」「お|願い」になるので禁止する
+const RE_HONORIFIC = /[ごお御]/;
+// 補助動詞・丁寧表現の前は文節の切れ目として改行してよい
+const AUX_HEADS = ["いただ", "くださ", "ござい", "おり", "いたし", "まいり", "申し"];
+// 数量＋単位（90分・9月・5名）や英字＋カタカナ語（QRコード）を分断しないための判定
+const RE_LATIN_NUM = /[0-9０-９A-Za-zＡ-Ｚａ-ｚ]/;
+const RE_JP = /[一-鿿々ぁ-ゖァ-ヺ]/;
+
+function mustJoinBefore(prev, ch) {
+  // 「90|分」「QR|コード」の向きだけを禁止する。逆向き（「は|19:00」）は
+  // 文節の切れ目なので改行を許す。
+  return RE_LATIN_NUM.test(prev) && RE_JP.test(ch);
+}
+
+function canBreakBefore(text, i) {
+  const prev = text[i - 1];
+  const ch = text[i];
+  if (RE_NO_LINE_START.test(ch)) return false; // 行頭禁則
+  if (RE_BREAK_AFTER.test(prev)) return true; // 句読点・中黒の後は切れる
+  if (!RE_HIRAGANA.test(prev)) return false; // 熟語・カタカナ語の途中では切らない
+  if (RE_HONORIFIC.test(prev)) return false;
+  if (RE_WORD_START.test(ch)) return true; // ひらがな→語頭 は文節の切れ目
+  return AUX_HEADS.some((w) => text.startsWith(w, i));
+}
+
+// 1行分のテキストに改行可能位置と結合子を埋め込む。
+// 強調用の制御文字は位置を保ったまま透過させ、前後の文字判定には含めない。
+function annotateLine(line) {
+  const plain = stripEm(line);
+  let out = "";
+  let idx = 0;
+  for (const ch of line) {
+    if (ch === EM_OPEN || ch === EM_CLOSE) {
+      out += ch;
+      continue;
+    }
+    if (idx > 0) {
+      const prev = plain[idx - 1];
+      if (mustJoinBefore(prev, ch)) out += WJ;
+      else if (canBreakBefore(plain, idx)) out += ZWSP;
+    }
+    out += ch;
+    idx++;
+  }
+  return out;
+}
+
+// 改行できない最長のかたまりの全角換算文字数
+function longestSegmentEm(text) {
+  let max = 0;
+  annotateLine(text)
+    .split(/[​\s]+/)
+    .forEach((seg) => {
+      let width = 0;
+      for (const ch of seg) {
+        if (ch === WJ || ch === EM_OPEN || ch === EM_CLOSE) continue;
+        width += /[ -~｡-ﾟ]/.test(ch) ? 0.5 : 1;
+      }
+      if (width > max) max = width;
+    });
+  return max;
+}
+
+// 「1語が行幅に収まらないフォントサイズは選ばない」ための概算上限。
+// 実際のはみ出しは overflowsBox() が幅でも判定するので、これは初期値の目安。
+const LETTER_SPACING_FACTOR = 1.03; // letter-spacing 0.02em 分の余裕
+
+function widthCapFor(text, boxWidth) {
+  const seg = longestSegmentEm(text);
+  if (!seg || !boxWidth) return Infinity;
+  return Math.floor(boxWidth / (seg * LETTER_SPACING_FACTOR));
+}
+
 // 本文を1行ずつ要素に分けて流し込む（text-wrap:balance を段落単位で効かせるため）。
 // ブランド名（keepTogether）は途中で改行させない。「和ぱすた　ぽぽらまーま」が
 // 「ぽぽらまー／ま」と分断されるのを防ぐ。ブランド名と店舗名の間の全角スペースでの
@@ -731,9 +819,9 @@ function renderBodyLines(container, text, keepTogether) {
     // 行ごと強調に指定された行は行全体を赤字にし、値だけの部分強調は打ち消す
     if (emphasizedLines.has(stripEm(line))) {
       el.classList.add("em-line");
-      appendPlain(el, stripEm(line), keepTogether);
+      appendPlain(el, annotateLine(stripEm(line)), keepTogether);
     } else {
-      appendWithEmphasis(el, line, keepTogether);
+      appendWithEmphasis(el, annotateLine(line), keepTogether);
     }
     container.appendChild(el);
   });
@@ -845,11 +933,20 @@ function fitTextToBox(box, text, maxSize, minSize, lineHeightFor) {
     if (lineHeightFor) text.style.lineHeight = String(lineHeightFor(size));
   };
   apply();
-  while (text.scrollHeight > box.clientHeight + 1 && size > minSize) {
+  while (overflowsBox(box, text) && size > minSize) {
     size = Math.max(minSize, size - FIT_STEP);
     apply();
   }
-  return text.scrollHeight <= box.clientHeight + 1;
+  return !overflowsBox(box, text);
+}
+
+// 高さだけでなく幅もはみ出し判定に含める。word-break: keep-all にしているため
+// 改行できないかたまり（と字間の加算分）が行幅を超えると、折り返されずに
+// 横へ溢れて見切れる。幅も見てフォントサイズを下げる必要がある。
+function overflowsBox(box, text) {
+  return (
+    text.scrollHeight > box.clientHeight + 1 || text.scrollWidth > text.clientWidth + 1
+  );
 }
 
 let textOverflowing = false;
@@ -881,19 +978,26 @@ function updatePreview() {
     heading = values.customHeading || "お知らせ";
   }
   const bracket = selectedFormat.bracket;
-  headingEl.textContent = heading ? `${bracket}${heading}${mirrorBracket(bracket)}` : "";
+  const headingText = heading ? `${bracket}${heading}${mirrorBracket(bracket)}` : "";
+  headingEl.textContent = annotateLine(headingText);
   headingEl.style.display = heading ? "flex" : "none";
   renderBodyLines(bodyTextEl, bodyText, getStoreBrand());
   buildEmphasisControls(bodyText);
 
   // 見出しを先に確定し、そのサイズを本文の上限に反映する。独立に決めると
   // 「本文44px・見出し42px」のように大小関係が逆転して情報の階層が崩れる。
-  const headingFit = fitTextToBox(headingEl, headingEl, HEADING_MAX_SIZE, HEADING_MIN_SIZE);
-  const headingSize = heading ? parseFloat(headingEl.style.fontSize) : Infinity;
-  const bodyCap = Math.max(
-    24,
-    Math.min(bodyCapForLength(stripEm(bodyText).replace(/\s/g, "").length), headingSize - 8)
+  const headingMax = Math.min(
+    HEADING_MAX_SIZE,
+    widthCapFor(headingText, headingEl.clientWidth)
   );
+  const headingFit = fitTextToBox(headingEl, headingEl, headingMax, HEADING_MIN_SIZE);
+  const headingSize = heading ? parseFloat(headingEl.style.fontSize) : Infinity;
+
+  const plainBody = stripEm(bodyText);
+  let bodyCap = Math.min(bodyCapForLength(plainBody.replace(/\s/g, "").length), headingSize - 8);
+  bodyCap = Math.max(bodyCap, 24); // 見出し連動で小さくしすぎない
+  bodyCap = Math.min(bodyCap, widthCapFor(plainBody, bodyEl.clientWidth));
+  bodyCap = Math.max(bodyCap, BODY_MIN_SIZE);
   const bodyFit = fitTextToBox(bodyEl, bodyTextEl, bodyCap, BODY_MIN_SIZE, bodyLineHeight);
   textOverflowing = !headingFit || !bodyFit;
   fitPreviewScale();
