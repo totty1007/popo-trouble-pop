@@ -182,6 +182,14 @@ function updatePaperSize() {
   fitPreviewScale();
 }
 
+// 各背景画像の罫線位置をピクセル解析して求めた、見出し帯・本文エリアの位置（ページ高さに対する割合）
+const BACKGROUND_LAYOUTS = {
+  standard_vertical: { headingTop: 4.8, headingHeight: 11, bodyTop: 26, bodyBottom: 78 },
+  standard_horizontal: { headingTop: 9, headingHeight: 13, bodyTop: 40, bodyBottom: 92 },
+  bar_vertical: { headingTop: 4.8, headingHeight: 9, bodyTop: 32, bodyBottom: 78 },
+  bar_horizontal: { headingTop: 10, headingHeight: 13, bodyTop: 40, bodyBottom: 90 },
+};
+
 function updateBackground() {
   const orientation = $("#orientation").value; // portrait | landscape
   const sel = $("#storeSelect");
@@ -189,8 +197,17 @@ function updateBackground() {
   const brand = opt ? opt.dataset.brand : "";
   const isBar = brand === "ポポラマーマバル";
   const orientationKey = orientation === "landscape" ? "horizontal" : "vertical";
+  const variantKey = (isBar ? "bar_" : "standard_") + orientationKey;
   const file = (isBar ? "popo_bar_" : "popo_standard_") + orientationKey + ".jpg";
   $("#previewPage").style.backgroundImage = `url("assets/${file}")`;
+
+  const layout = BACKGROUND_LAYOUTS[variantKey];
+  const headingEl = $("#previewHeading");
+  const bodyEl = $("#previewBody");
+  headingEl.style.top = layout.headingTop + "%";
+  headingEl.style.height = layout.headingHeight + "%";
+  bodyEl.style.top = layout.bodyTop + "%";
+  bodyEl.style.bottom = 100 - layout.bodyBottom + "%";
 }
 
 function renderFieldsForFormat(fmt) {
