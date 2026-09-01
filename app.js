@@ -161,7 +161,12 @@ function bindGlobalControls() {
   $("#storeSelect").addEventListener("change", updatePreview);
   $("#orientation").addEventListener("change", updatePaperSize);
   $("#designSelect").addEventListener("change", updatePaperSize);
-  $("#logoSelect").addEventListener("change", updateLogoBadge);
+  // ロゴの有無で本文エリアの下端が変わるため、バッジ更新だけでなく
+  // 文字サイズの再計算まで通す必要がある。
+  $("#logoSelect").addEventListener("change", () => {
+    updateLogoBadge();
+    updatePreview();
+  });
   $("#printBtn").addEventListener("click", () => window.print());
   window.addEventListener("resize", () => {
     layoutViewport();
@@ -207,12 +212,38 @@ function updatePaperSize() {
   updatePreview();
 }
 
-// 各背景画像の罫線位置をピクセル解析して求めた、見出し帯・本文エリアの位置（ページ高さに対する割合）
+// 見出し帯・本文エリア・ロゴ枠の位置（ページ幅/高さに対する%）。
+// いずれも背景画像を画素解析し、イラスト装飾・罫線と重ならない範囲を実測して決めている。
+//  - bodySide: 本文の左右マージン。縦は左17.6%まで装飾があるため17%が限界。
+//              横は12%まで装飾が無いので広げ、折り返しを減らして文字を大きくする。
+//  - logo: 縦は右下がトマト/ワインの大型イラストで空きが無いため「下中央」、
+//          横は右下に空きがあるため従来どおり「右下」。いずれも装飾との重なり0%。
+//  - bodyTop: 見出し帯直下の飾り罫の下端を実測して決めた値。A縦は17-18%に、
+//             横2枚は25-31%に横罫があり、そこを越えた位置から本文を始める。
+//             B縦だけは21-31%に飾りが散っているため下げたまま。
+//  - bodyBottomWithLogo: ロゴを表示する時だけ本文下端を上げる。ロゴ未選択なら
+//             本文が使える高さを削らない（横向きは高さが最も苦しいため）。
 const BACKGROUND_LAYOUTS = {
-  standard_vertical: { headingTop: 4.8, headingHeight: 11, bodyTop: 26, bodyBottom: 78 },
-  standard_horizontal: { headingTop: 9, headingHeight: 13, bodyTop: 40, bodyBottom: 92 },
-  bar_vertical: { headingTop: 4.8, headingHeight: 9, bodyTop: 32, bodyBottom: 78 },
-  bar_horizontal: { headingTop: 10, headingHeight: 13, bodyTop: 40, bodyBottom: 90 },
+  standard_vertical: {
+    headingTop: 4.8, headingHeight: 11, bodyTop: 20, bodyBottom: 78,
+    bodyBottomWithLogo: 78, bodySide: 17,
+    logo: { right: 40, bottom: 6, height: 11, maxWidth: 20 },
+  },
+  standard_horizontal: {
+    headingTop: 9, headingHeight: 13, bodyTop: 37, bodyBottom: 92,
+    bodyBottomWithLogo: 88, bodySide: 12,
+    logo: { right: 14, bottom: 4, height: 7, maxWidth: 22 },
+  },
+  bar_vertical: {
+    headingTop: 4.8, headingHeight: 9, bodyTop: 32, bodyBottom: 78,
+    bodyBottomWithLogo: 78, bodySide: 17,
+    logo: { right: 40, bottom: 6, height: 11, maxWidth: 20 },
+  },
+  bar_horizontal: {
+    headingTop: 10, headingHeight: 13, bodyTop: 33, bodyBottom: 90,
+    bodyBottomWithLogo: 88, bodySide: 12,
+    logo: { right: 14, bottom: 4, height: 7, maxWidth: 22 },
+  },
 };
 
 function updateBackground() {
@@ -227,10 +258,18 @@ function updateBackground() {
   const layout = BACKGROUND_LAYOUTS[variantKey];
   const headingEl = $("#previewHeading");
   const bodyEl = $("#previewBody");
+  const page = $("#previewPage");
   headingEl.style.top = layout.headingTop + "%";
   headingEl.style.height = layout.headingHeight + "%";
+  const logoShown = Boolean($("#logoSelect").value);
+  const bodyBottom = logoShown ? layout.bodyBottomWithLogo : layout.bodyBottom;
   bodyEl.style.top = layout.bodyTop + "%";
-  bodyEl.style.bottom = 100 - layout.bodyBottom + "%";
+  bodyEl.style.bottom = 100 - bodyBottom + "%";
+  page.style.setProperty("--body-side", layout.bodySide + "%");
+  page.style.setProperty("--logo-right", layout.logo.right + "%");
+  page.style.setProperty("--logo-bottom", layout.logo.bottom + "%");
+  page.style.setProperty("--logo-height", layout.logo.height + "%");
+  page.style.setProperty("--logo-max-width", layout.logo.maxWidth + "%");
 }
 
 function updateLogoBadge() {
@@ -577,23 +616,60 @@ function renderBody(fmt, values) {
   return text;
 }
 
-const HEADING_BASE_SIZE = 42;
+// 文字サイズの設計値（px）。A4は96dpiで210mm=793px相当なので px×0.2646 が実寸mm。
+// 店頭に掲示し1〜2m離れて読むPOPのため、従来の見出し42px/本文24pxから引き上げた。
+const HEADING_MAX_SIZE = 56; // 14.8mm / 42pt
 const HEADING_MIN_SIZE = 20;
-const BODY_BASE_SIZE = 24;
-const BODY_MIN_SIZE = 13;
+const BODY_MIN_SIZE = 14;
+const FIT_STEP = 2; // 1px刻みは知覚できない差でブレるだけなので2px(1.5pt)刻み
 
-// 見出し・本文がそれぞれの表示エリアからはみ出す場合、無言で見切れさせず
-// 収まるまでフォントサイズを段階的に縮小する（POPとして必ず全文が読める状態を保証する）。
-// 最小サイズまで縮小しても収まらない場合はfalseを返し、呼び出し側で印刷をブロックする。
-function fitTextToBox(el, baseSize, minSize) {
-  if (el.style.display === "none") return true;
-  let size = baseSize;
-  el.style.fontSize = size + "px";
-  while (el.scrollHeight > el.clientHeight + 1 && size > minSize) {
-    size -= 1;
-    el.style.fontSize = size + "px";
+// 本文は「短いPOPほど大きく」する。文字数から上限を決めるのは、行数を基準にすると
+// 「サイズを決めるのに行数が必要／行数を知るのにサイズが必要」で循環するため。
+function bodyCapForLength(len) {
+  if (len <= 40) return 44; // 11.6mm
+  if (len <= 80) return 40;
+  if (len <= 140) return 36;
+  return 32; // 8.5mm（従来の24pxより大きい）
+}
+
+// 和文は行間を広く取る必要があるが、比率固定のままサイズを上げると行間が開きすぎて
+// 段落が塊として見えなくなるため、サイズに応じて行送りを詰める。
+function bodyLineHeight(size) {
+  if (size >= 36) return 1.5;
+  if (size >= 28) return 1.62;
+  return 1.75;
+}
+
+// 本文を1行ずつ要素に分けて流し込む（text-wrap:balance を段落単位で効かせるため）。
+function renderBodyLines(container, text) {
+  container.textContent = "";
+  text.split("\n").forEach((line) => {
+    const el = document.createElement("div");
+    el.className = "preview-body-line";
+    el.textContent = line;
+    container.appendChild(el);
+  });
+}
+
+// 表示エリアからはみ出す場合、無言で見切れさせず収まるまでフォントサイズを段階的に
+// 縮小する（POPとして必ず全文が読める状態を保証する）。逆に文字数が少ない場合は
+// 上限まで拡大される。最小サイズまで縮小しても収まらない場合はfalseを返し、
+// 呼び出し側で印刷をブロックする。
+// box  … 大きさが固定された枠。box.clientHeight が使える高さ
+// text … 実際に文字が入る要素。box と同一要素でもよい
+function fitTextToBox(box, text, maxSize, minSize, lineHeightFor) {
+  if (box.style.display === "none") return true;
+  let size = maxSize;
+  const apply = () => {
+    text.style.fontSize = size + "px";
+    if (lineHeightFor) text.style.lineHeight = String(lineHeightFor(size));
+  };
+  apply();
+  while (text.scrollHeight > box.clientHeight + 1 && size > minSize) {
+    size = Math.max(minSize, size - FIT_STEP);
+    apply();
   }
-  return el.scrollHeight <= el.clientHeight + 1;
+  return text.scrollHeight <= box.clientHeight + 1;
 }
 
 let textOverflowing = false;
@@ -601,14 +677,15 @@ let textOverflowing = false;
 function updatePreview() {
   const headingEl = $("#previewHeading");
   const bodyEl = $("#previewBody");
+  const bodyTextEl = $("#previewBodyText");
 
   updateBackground();
 
   if (!selectedFormat) {
     headingEl.textContent = "";
     headingEl.style.display = "none";
-    bodyEl.textContent = "フォーマットを選択すると、ここにプレビューが表示されます。";
-    fitTextToBox(bodyEl, BODY_BASE_SIZE, BODY_MIN_SIZE);
+    renderBodyLines(bodyTextEl, "フォーマットを選択すると、ここにプレビューが表示されます。");
+    fitTextToBox(bodyEl, bodyTextEl, 32, BODY_MIN_SIZE, bodyLineHeight);
     textOverflowing = false;
     fitPreviewScale();
     updatePrintButtonState();
@@ -625,10 +702,17 @@ function updatePreview() {
   const bracket = selectedFormat.bracket;
   headingEl.textContent = heading ? `${bracket}${heading}${mirrorBracket(bracket)}` : "";
   headingEl.style.display = heading ? "flex" : "none";
-  bodyEl.textContent = bodyText;
+  renderBodyLines(bodyTextEl, bodyText);
 
-  const headingFit = fitTextToBox(headingEl, HEADING_BASE_SIZE, HEADING_MIN_SIZE);
-  const bodyFit = fitTextToBox(bodyEl, BODY_BASE_SIZE, BODY_MIN_SIZE);
+  // 見出しを先に確定し、そのサイズを本文の上限に反映する。独立に決めると
+  // 「本文44px・見出し42px」のように大小関係が逆転して情報の階層が崩れる。
+  const headingFit = fitTextToBox(headingEl, headingEl, HEADING_MAX_SIZE, HEADING_MIN_SIZE);
+  const headingSize = heading ? parseFloat(headingEl.style.fontSize) : Infinity;
+  const bodyCap = Math.max(
+    24,
+    Math.min(bodyCapForLength(bodyText.replace(/\s/g, "").length), headingSize - 8)
+  );
+  const bodyFit = fitTextToBox(bodyEl, bodyTextEl, bodyCap, BODY_MIN_SIZE, bodyLineHeight);
   textOverflowing = !headingFit || !bodyFit;
   fitPreviewScale();
   updatePrintButtonState();

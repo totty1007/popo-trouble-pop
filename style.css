@@ -218,31 +218,52 @@ textarea { resize: vertical; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 42px;
+  font-size: 56px;
   font-weight: 800;
   letter-spacing: 0.02em;
+  /* line-height を未指定にすると和文フォントの normal(実効1.4〜1.5) が効き、
+     2行見出しが見出し帯に入らず不要に自動縮小される。1.2 を明示する。 */
+  line-height: 1.2;
   overflow: hidden;
 }
 
+/* 本文は「枠」と「テキスト」を分離し、枠側をflexにして縦中央揃えにする。
+   文字数の少ないPOPで文字が上に寄り、下に大きな空白が残るのを防ぐ。 */
 .preview-body {
   position: absolute;
-  left: 17%;
-  right: 17%;
-  font-size: 24px;
-  line-height: 1.75;
-  white-space: pre-wrap;
+  left: var(--body-side, 17%);
+  right: var(--body-side, 17%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
+}
+.preview-body-text {
+  width: 100%;
+  font-size: 32px;
+  line-height: 1.62;
+}
+/* 本文は1行（＝1文）ずつ要素に分け、text-wrap:balance を段落単位で効かせる。
+   本文全体に掛けると文単位の折り返しが揃わず、中央揃えの本文で
+   「す。」のような1〜2文字だけの行が取り残される。 */
+.preview-body-line {
+  white-space: pre-wrap;
+  text-wrap: balance;
+  /* 「11:00〜15:00」のような分割不可の文字列が途中で割れないようにする */
+  overflow-wrap: normal;
+  word-break: normal;
+  line-break: strict;
 }
 
 .preview-logo-badge {
   position: absolute;
-  right: 4%;
-  bottom: 4%;
-  max-width: 22%;
-  height: 12%;
+  /* 位置と大きさは背景画像の装飾を避けるため、バリアントごとにJSから設定する */
+  right: var(--logo-right, 40%);
+  bottom: var(--logo-bottom, 6%);
+  max-width: var(--logo-max-width, 20%);
+  height: var(--logo-height, 11%);
   background: rgba(255, 255, 255, 0.94);
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   display: none;
   align-items: center;
   justify-content: center;
