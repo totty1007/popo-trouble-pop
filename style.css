@@ -117,7 +117,7 @@ textarea { resize: vertical; }
 }
 .daylist-row {
   display: grid;
-  grid-template-columns: 1fr 1.6fr 1.4fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1.4fr) auto;
   gap: 6px;
   align-items: center;
 }
@@ -164,6 +164,23 @@ textarea { resize: vertical; }
   cursor: pointer;
 }
 .btn-primary:hover { opacity: 0.92; }
+.btn-primary:disabled {
+  background: #c7c9cf;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.print-hint {
+  margin: -8px 0 0;
+  font-size: 12.5px;
+  color: #c0392b;
+  min-height: 1.2em;
+}
+
+.field-invalid {
+  border-color: #e05252 !important;
+  background: #fff5f5;
+}
 
 .preview-wrap {
   flex: 1 1 500px;
@@ -204,6 +221,7 @@ textarea { resize: vertical; }
   font-size: 42px;
   font-weight: 800;
   letter-spacing: 0.02em;
+  overflow: hidden;
 }
 
 .preview-body {
@@ -220,8 +238,8 @@ textarea { resize: vertical; }
   position: absolute;
   right: 4%;
   bottom: 4%;
-  width: 16%;
-  aspect-ratio: 1 / 1;
+  width: 22%;
+  height: 12%;
   background: rgba(255, 255, 255, 0.94);
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);

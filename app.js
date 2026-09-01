@@ -202,8 +202,9 @@ function updatePaperSize() {
     document.head.appendChild(styleTag);
   }
   styleTag.textContent = `@page { size: A4 ${orientation}; margin: 0; }`;
-  updateBackground();
-  fitPreviewScale();
+  // 背景・文字サイズ・印刷可否をまとめて再計算する（向き/デザイン変更時に文字サイズが
+  // 古いままになる不具合を防ぐため、必ずupdatePreview経由で一本化する）
+  updatePreview();
 }
 
 // 各背景画像の罫線位置をピクセル解析して求めた、見出し帯・本文エリアの位置（ページ高さに対する割合）
@@ -462,6 +463,63 @@ function getStoreFull() {
   return brand + sel.value;
 }
 
+// 必須項目（optional指定のないフィールド）が埋まっているかを確認し、
+// 未入力の入力欄には赤枠を付ける。「、、」のような欠落文言のまま印刷されるのを防ぐ。
+function validateFields(fmt) {
+  let allValid = true;
+  if (!fmt) return false;
+
+  fmt.fields.forEach((field) => {
+    if (field.optional || field.type === "checkboxGroup") return;
+
+    if (field.type === "dayList") {
+      const rows = dayListState[field.key] || [];
+      if (!rows.some((r) => r.date)) allValid = false;
+      return;
+    }
+
+    const el = $("#f_" + field.key);
+    if (!el) return;
+    let targetEl = el;
+    let value = el.value;
+    if (field.type === "select" && el.value === "__custom__") {
+      const custom = $("#f_" + field.key + "_custom");
+      targetEl = custom || el;
+      value = custom ? custom.value : "";
+    }
+    const invalid = !value || !String(value).trim();
+    targetEl.classList.toggle("field-invalid", invalid);
+    if (invalid) allValid = false;
+  });
+
+  return allValid;
+}
+
+function updatePrintButtonState() {
+  const btn = $("#printBtn");
+  const hint = $("#printHint");
+  const storeOk = !!$("#storeSelect").value;
+  const fieldsOk = validateFields(selectedFormat);
+  const ready = storeOk && !!selectedFormat && fieldsOk && !textOverflowing;
+
+  btn.disabled = !ready;
+
+  if (!hint) return;
+  if (ready) {
+    hint.textContent = "";
+  } else if (!storeOk && !selectedFormat) {
+    hint.textContent = "店舗とフォーマットを選択してください。";
+  } else if (!storeOk) {
+    hint.textContent = "店舗を選択してください。";
+  } else if (!selectedFormat) {
+    hint.textContent = "フォーマットを選択してください。";
+  } else if (textOverflowing) {
+    hint.textContent = "文章が長すぎて枠に収まりません。本文を短くしてください。";
+  } else {
+    hint.textContent = "赤枠の必須項目を入力してください。";
+  }
+}
+
 function buildValues(fmt) {
   const values = { storeFull: getStoreFull() };
   fmt.fields.forEach((field) => {
@@ -519,8 +577,28 @@ function renderBody(fmt, values) {
   return text;
 }
 
+const HEADING_BASE_SIZE = 42;
+const HEADING_MIN_SIZE = 20;
+const BODY_BASE_SIZE = 24;
+const BODY_MIN_SIZE = 13;
+
+// 見出し・本文がそれぞれの表示エリアからはみ出す場合、無言で見切れさせず
+// 収まるまでフォントサイズを段階的に縮小する（POPとして必ず全文が読める状態を保証する）。
+// 最小サイズまで縮小しても収まらない場合はfalseを返し、呼び出し側で印刷をブロックする。
+function fitTextToBox(el, baseSize, minSize) {
+  if (el.style.display === "none") return true;
+  let size = baseSize;
+  el.style.fontSize = size + "px";
+  while (el.scrollHeight > el.clientHeight + 1 && size > minSize) {
+    size -= 1;
+    el.style.fontSize = size + "px";
+  }
+  return el.scrollHeight <= el.clientHeight + 1;
+}
+
+let textOverflowing = false;
+
 function updatePreview() {
-  const preview = $("#previewPage");
   const headingEl = $("#previewHeading");
   const bodyEl = $("#previewBody");
 
@@ -528,7 +606,12 @@ function updatePreview() {
 
   if (!selectedFormat) {
     headingEl.textContent = "";
-    bodyEl.textContent = "フォーマットを選択してください。";
+    headingEl.style.display = "none";
+    bodyEl.textContent = "フォーマットを選択すると、ここにプレビューが表示されます。";
+    fitTextToBox(bodyEl, BODY_BASE_SIZE, BODY_MIN_SIZE);
+    textOverflowing = false;
+    fitPreviewScale();
+    updatePrintButtonState();
     return;
   }
 
@@ -541,9 +624,14 @@ function updatePreview() {
   }
   const bracket = selectedFormat.bracket;
   headingEl.textContent = heading ? `${bracket}${heading}${mirrorBracket(bracket)}` : "";
-  headingEl.style.display = heading ? "block" : "none";
+  headingEl.style.display = heading ? "flex" : "none";
   bodyEl.textContent = bodyText;
+
+  const headingFit = fitTextToBox(headingEl, HEADING_BASE_SIZE, HEADING_MIN_SIZE);
+  const bodyFit = fitTextToBox(bodyEl, BODY_BASE_SIZE, BODY_MIN_SIZE);
+  textOverflowing = !headingFit || !bodyFit;
   fitPreviewScale();
+  updatePrintButtonState();
 }
 
 function mirrorBracket(b) {
