@@ -727,18 +727,19 @@ const FIT_STEP = 2; // 1px刻みは知覚できない差でブレるだけなの
 // 本文は「短いPOPほど大きく」する。文字数から上限を決めるのは、行数を基準にすると
 // 「サイズを決めるのに行数が必要／行数を知るのにサイズが必要」で循環するため。
 function bodyCapForLength(len) {
-  if (len <= 40) return 44; // 11.6mm
-  if (len <= 80) return 40;
-  if (len <= 140) return 36;
-  return 32; // 8.5mm（従来の24pxより大きい）
+  if (len <= 40) return 48; // 12.7mm
+  if (len <= 80) return 44;
+  if (len <= 140) return 40;
+  return 36; // 9.5mm
 }
 
 // 和文は行間を広く取る必要があるが、比率固定のままサイズを上げると行間が開きすぎて
 // 段落が塊として見えなくなるため、サイズに応じて行送りを詰める。
+// 2026-09-24に文字を大きくするため1段ずつ詰めた（旧: 1.5 / 1.62 / 1.75）。
 function bodyLineHeight(size) {
-  if (size >= 36) return 1.5;
-  if (size >= 28) return 1.62;
-  return 1.75;
+  if (size >= 36) return 1.4;
+  if (size >= 28) return 1.5;
+  return 1.6;
 }
 
 // ===== 日本語の改行位置の制御 =====
@@ -967,6 +968,16 @@ function fitTextToBox(box, text, maxSize, minSize, lineHeightFor) {
   while (overflowsBox(box, text) && size > minSize) {
     size = Math.max(minSize, size - FIT_STEP);
     apply();
+  }
+  // 上限が奇数（幅や見出しから決まる値）だと「39→37→35」と2px刻みで下がり、
+  // 収まるはずの36pxを飛ばしてしまう。1px戻して収まるならそちらを採る。
+  if (size < maxSize && !overflowsBox(box, text)) {
+    size += 1;
+    apply();
+    if (overflowsBox(box, text)) {
+      size -= 1;
+      apply();
+    }
   }
   return !overflowsBox(box, text);
 }

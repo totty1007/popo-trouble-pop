@@ -2,6 +2,10 @@
 // 各フォーマットは「見出し」「本文テンプレート」「入力フィールド」を持つ。
 // 本文テンプレート中の {{key}} は入力値に置換される。{{storeFull}} は店舗選択から自動生成。
 
+// 冒頭の挨拶文（全フォーマット共通）。POPの文字サイズは本文の長さで決まるため、
+// 「いつも、」「日頃より」「誠に」を省いて短くしている（店舗名込みで2〜3行を使っていた）。
+const GREETING = "{{storeFull}}をご利用いただきありがとうございます。\n";
+
 const CHANGE_TYPE_OPTIONS = [
   "通常より閉店時間が早まる場合があります",
   "通常より開店時間が遅くなる場合があります",
@@ -45,7 +49,7 @@ const FORMATS = [
       },
     ],
     body:
-      "いつも、{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "{{weather}}の影響により営業時間の変更をさせて頂く場合がございます。\n" +
       "{{days}}\n" +
       "当日の天候次第で変更をさせていただきます。\n" +
@@ -70,7 +74,7 @@ const FORMATS = [
       { key: "lastOrderTime", label: "ラストオーダー時刻", type: "time", optional: true },
     ],
     body:
-      "いつも、{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "{{reason}}の影響により、本日は下記の時間で営業を終了させていただきます。\n" +
       "{{closeTime}}　Close{{lastOrderBlock}}\n" +
       "※食材が無くなり次第、予定より早く閉店する可能性もございます。\n" +
@@ -101,7 +105,7 @@ const FORMATS = [
       { key: "reopenTime", label: "再開予定時刻", type: "time", optional: true },
     ],
     body:
-      "いつも、{{storeFull}}をご利用いただき誠にありがとうございます。\n" +
+      GREETING +
       "{{reason}}により、本日は休業させていただきます。\n" +
       "{{reopenBlock}}\n" +
       "お客様には大変ご迷惑をお掛け致しますが、ご理解、ご協力の程宜しくお願い申し上げます。",
@@ -131,7 +135,7 @@ const FORMATS = [
       { key: "reopenTime", label: "営業開始予定時刻", type: "time", optional: true },
     ],
     body:
-      "いつも、{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "{{reason}}により、現在開店を遅らせていただいております。\n" +
       "{{reopenBlock}}\n" +
       "お客様には大変ご迷惑をお掛け致しますが、ご理解、ご協力の程宜しくお願い申し上げます。",
@@ -158,7 +162,7 @@ const FORMATS = [
       { key: "lastOrderTime", label: "ラストオーダー時刻（閉店パターンのみ）", type: "time", optional: true },
     ],
     body:
-      "いつも、{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "お客様には大変ご迷惑をお掛け致しますが、ご理解・ご協力の程宜しくお願い申し上げます。\n" +
       "{{patternType}}。\n" +
       "{{time1}}{{lastOrderBlock}}\n" +
@@ -174,7 +178,7 @@ const FORMATS = [
     heading: "お詫びとお願い",
     fields: [],
     body:
-      "日頃より{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "本日はスタッフ体制の都合により、ご案内・お料理のご提供にお時間をいただく場合がございます。\n" +
       "ご不便をおかけし申し訳ございません。何卒ご理解のほどよろしくお願いいたします。",
   },
@@ -186,7 +190,7 @@ const FORMATS = [
     heading: "列の最後尾は階段です",
     fields: [],
     body:
-      "日頃より{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "順番にご案内しております。このまま階段に沿ってお並びの上、お待ちくださいませ。\n" +
       "順次ご案内させていただきます。",
   },
@@ -202,7 +206,7 @@ const FORMATS = [
       { key: "largeGroupSize", label: "多人数の基準（〜名様以上の場合）", type: "text", default: "6" },
     ],
     body:
-      "日頃より{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "当店では消防法に基づく安全管理の観点から、テーブル同士をつなげてご利用いただくことはできません。\n" +
       "恐れ入りますが、以下の通りご案内させていただいております。\n" +
       "{{smallGroupSize}}名様の場合：{{smallGroupText}}\n" +
@@ -232,7 +236,7 @@ const FORMATS = [
       },
     ],
     body:
-      "日頃より{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "この度、{{reason}}、テラス席の営業を終了し、ウェイティングスペース専用とさせていただくこととなりました。\n" +
       "お食事でのご利用を楽しみにされていたお客様にはご不便をおかけいたしますが、何卒ご理解賜りますようお願い申し上げます。\n" +
       "引き続き変わらぬご愛顧のほどお願い申し上げます。",
@@ -247,7 +251,7 @@ const FORMATS = [
       { key: "minutes", label: "制限時間（分）", type: "number", default: "60" },
     ],
     body:
-      "日頃より{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "より多くのお客様におくつろぎいただくため、混雑時は、{{minutes}}分制とさせていただいております。\n" +
       "また、お会計は席ごとにまとめていただけますと幸いです。\n" +
       "ご理解とご協力の程、よろしくお願いいたします。",
@@ -289,7 +293,7 @@ const FORMATS = [
       },
     ],
     body:
-      "いつも、{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "現在、{{cause}}により、{{unavailable}}がご利用いただけない可能性がございます。\n" +
       "{{availableBlock}}\n" +
       "お客様にはご迷惑をお掛けいたしますが、ご理解・ご協力の程宜しくお願い申し上げます。",
@@ -304,7 +308,7 @@ const FORMATS = [
       { key: "cause", label: "原因（例：駅前電気工事）", type: "text", default: "周辺の電気工事" },
     ],
     body:
-      "いつも、{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "{{cause}}の影響により、ネット回線の不具合が生じております。\n" +
       "回線復旧作業が生じた場合、クレジットカード・電子マネーのご利用時に、お時間を頂戴する事がございます。\n" +
       "お客様にはご迷惑をお掛け致しますが、ご理解・ご協力の程宜しくお願い申し上げます。",
@@ -323,7 +327,7 @@ const FORMATS = [
       { key: "afterHours", label: "変更後の営業時間（自由記述・改行可）", type: "textarea", default: "21:00 L.O　21:30 CLOSE" },
     ],
     body:
-      "日頃より{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "諸般の事情により、{{effectiveDate}}より下記の営業時間に変更させていただきます。\n" +
       "【変更前】\n{{beforeHours}}\n" +
       "【変更後】\n{{afterHours}}\n" +
@@ -340,7 +344,7 @@ const FORMATS = [
       { key: "newHoliday", label: "新しい定休日", type: "text", default: "毎週水曜日" },
     ],
     body:
-      "日頃より{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "諸般の事情により、{{effectiveDate}}より定休日を「{{newHoliday}}」に変更させていただきます。\n" +
       "お客様にはご不便をおかけいたしますが、ご理解の程よろしくお願い申し上げます。",
   },
@@ -357,7 +361,7 @@ const FORMATS = [
       { key: "endDate", label: "終了時期", type: "text", default: "今月末" },
     ],
     body:
-      "いつも、{{storeFull}}をご利用いただき誠にありがとうございます。\n" +
+      GREETING +
       "この度、誠に勝手ながら「{{serviceName}}」を、{{endDate}}で終了させていただくこととなりました。\n" +
       "これまでのご利用に感謝申し上げます。今後もより良いサービスを提供できるよう努めてまいりますので、引き続きご愛顧のほどよろしくお願いいたします。",
   },
@@ -371,7 +375,7 @@ const FORMATS = [
       { key: "endDate", label: "終了時期（例：2025年12月より）", type: "text" },
     ],
     body:
-      "日頃より{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "この度、店舗運営体制の見直しに伴い、{{endDate}}テイクアウト販売を終了させていただくこととなりました。\n" +
       "これまでご利用いただいていたお客様にはご不便をおかけいたしますが、何卒ご理解賜りますようお願い申し上げます。\n" +
       "引き続き変わらぬご愛顧のほどお願い申し上げます。",
@@ -387,7 +391,7 @@ const FORMATS = [
       { key: "items", label: "販売中止となる商品", type: "text", default: "ピザ・トースト・グラタン等" },
     ],
     body:
-      "日頃より{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "{{equipment}}の不具合により、{{items}}の販売は一時中止させて頂いております。\n" +
       "お客様にはご迷惑をお掛け致しますが、ご理解・ご協力の程宜しくお願い申し上げます。",
   },
@@ -403,7 +407,7 @@ const FORMATS = [
       { key: "afterTime", label: "変更後の提供時間", type: "text", default: "11:00〜17:00" },
     ],
     body:
-      "いつも、{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "お客様からのご要望にお応えし、{{effectiveDate}}より、平日ランチセットの提供時間を変更いたします。\n" +
       "【変更前】{{beforeTime}}\n【変更後】{{afterTime}}\n" +
       "皆さまのご来店を心よりお待ちしております。",
@@ -428,7 +432,7 @@ const FORMATS = [
       },
     ],
     body:
-      "いつも、{{storeFull}}をご利用いただき誠にありがとうございます。\n" +
+      GREETING +
       "{{type}}。\n" +
       "ご利用のお客様には大変ご不便をお掛けいたしますが、ご理解・ご協力の程よろしくお願い申し上げます。",
   },
@@ -449,7 +453,7 @@ const FORMATS = [
       },
     ],
     body:
-      "いつも、{{storeFull}}をご利用頂き誠にありがとうございます。\n" +
+      GREETING +
       "{{customBody}}\n" +
       "お客様にはご迷惑をお掛け致しますが、ご理解・ご協力の程宜しくお願い申し上げます。",
     dynamicHeading: true,
