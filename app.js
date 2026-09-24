@@ -760,7 +760,11 @@ const RE_BREAK_AFTER = /[、。，．！？：；」』）】・]/;
 // 接頭の「ご」「お」「御」の直後で切ると「ご|理解」「お|願い」になるので禁止する
 const RE_HONORIFIC = /[ごお御]/;
 // 補助動詞・丁寧表現の前は文節の切れ目として改行してよい
-const AUX_HEADS = ["いただ", "くださ", "ござい", "おり", "いたし", "まいり", "申し"];
+// 「ありがとう」の前（「ご利用いただき｜ありがとうございます」）も文節の切れ目として改行してよい。
+// ここで切れないと「ご利用いただきありがとうございます。」が1語になり、幅の都合で文字が縮む。
+const AUX_HEADS = ["いただ", "くださ", "ござい", "おり", "いたし", "まいり", "申し", "ありがとう"];
+// 途中で改行させない決まり文句（「ありがとう／ございます」と割れると読みにくい）
+const KEEP_TOGETHER_PHRASES = ["ありがとうございます"];
 // 複合動詞の後項。ここで切ると「申し／上げます」のように動詞が分断される
 const COMPOUND_TAILS = ["上げ", "上が", "下げ", "合わせ", "込み", "直し", "出し"];
 // 数量＋単位（90分・9月・5名）や英字＋カタカナ語（QRコード）を分断しないための判定
@@ -774,11 +778,21 @@ function mustJoinBefore(prev, ch) {
   return RE_LATIN_NUM.test(prev) && RE_JP.test(ch);
 }
 
+function isInsidePhrase(text, i) {
+  return KEEP_TOGETHER_PHRASES.some((w) => {
+    for (let p = text.indexOf(w); p !== -1; p = text.indexOf(w, p + 1)) {
+      if (i > p && i < p + w.length) return true;
+    }
+    return false;
+  });
+}
+
 function canBreakBefore(text, i) {
   const prev = text[i - 1];
   const ch = text[i];
   if (RE_NO_LINE_START.test(ch)) return false; // 行頭禁則
   if (COMPOUND_TAILS.some((w) => text.startsWith(w, i))) return false;
+  if (isInsidePhrase(text, i)) return false;
   // 「・9月15日（火）」のような箇条書きの先頭の中黒は、行末に取り残さない
   if (prev === "・" && i === 1) return false;
   if (RE_BREAK_AFTER.test(prev)) return true; // 句読点・中黒の後は切れる
