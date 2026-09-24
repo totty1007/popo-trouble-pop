@@ -261,18 +261,18 @@ const BACKGROUND_LAYOUTS = {
     logo: { anchor: "right", right: 13, bottom: 4, maxWidth: 74, maxHeight: 16 },
   },
   // デザインC（フォーマル）は背景に白い見出し帯・本文枠が描かれているため、
-  // 文字は必ず枠の内側に収める（枠の実測: 縦=見出し11.6-17.7% 本文23.8-82.1% 左右11.7%、
-  // 横=見出し14.6-22.7% 本文30.8-77.3% 左右8.9%）。ロゴは本文枠の外（下の余白）に置くので
-  // ロゴの有無で本文の高さは変わらない。
+  // 文字は必ず枠の内側に収める。本文枠はGemini原画より下へ延ばしてある（隅の唐草飾りから
+  // 横1%以上離れる所まで）。枠の実測: 縦=見出し11.6-17.7% 本文23.8-89.5% 左右11.6%、
+  // 横=見出し14.6-22.7% 本文30.7-88.0% 左右8.9%。ロゴは本文枠の内側下部に置く。
   formal_vertical: {
-    headingTop: 12, headingHeight: 5.3, headingSide: 14, bodyTop: 25.5, bodyBottom: 80.5,
-    bodyBottomWithLogo: 80.5, bodySide: 15,
-    logo: { anchor: "center", bottom: 7, maxWidth: 50, maxHeight: 9 },
+    headingTop: 12, headingHeight: 5.3, headingSide: 14, bodyTop: 25, bodyBottom: 88.3,
+    bodyBottomWithLogo: 88.3, bodySide: 13,
+    logo: { anchor: "center", bottom: 11.5, maxWidth: 50, maxHeight: 8 },
   },
   formal_horizontal: {
-    headingTop: 15, headingHeight: 7.4, headingSide: 11, bodyTop: 32.5, bodyBottom: 75.8,
-    bodyBottomWithLogo: 75.8, bodySide: 11.5,
-    logo: { anchor: "right", right: 10, bottom: 10, maxWidth: 35, maxHeight: 11 },
+    headingTop: 15, headingHeight: 7.4, headingSide: 11, bodyTop: 32, bodyBottom: 86.8,
+    bodyBottomWithLogo: 86.8, bodySide: 10.3,
+    logo: { anchor: "right", right: 10.3, bottom: 13, maxWidth: 35, maxHeight: 10 },
   },
 };
 
