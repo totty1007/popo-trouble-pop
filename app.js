@@ -260,16 +260,30 @@ const BACKGROUND_LAYOUTS = {
     bodyBottomWithLogo: 88, bodySide: 12,
     logo: { anchor: "right", right: 13, bottom: 4, maxWidth: 74, maxHeight: 16 },
   },
+  // デザインC（フォーマル）は背景に白い見出し帯・本文枠が描かれているため、
+  // 文字は必ず枠の内側に収める（枠の実測: 縦=見出し11.6-17.7% 本文23.8-82.1% 左右11.7%、
+  // 横=見出し14.6-22.7% 本文30.8-77.3% 左右8.9%）。ロゴは本文枠の外（下の余白）に置くので
+  // ロゴの有無で本文の高さは変わらない。
+  formal_vertical: {
+    headingTop: 12, headingHeight: 5.3, headingSide: 14, bodyTop: 25.5, bodyBottom: 80.5,
+    bodyBottomWithLogo: 80.5, bodySide: 15,
+    logo: { anchor: "center", bottom: 7, maxWidth: 50, maxHeight: 9 },
+  },
+  formal_horizontal: {
+    headingTop: 15, headingHeight: 7.4, headingSide: 11, bodyTop: 32.5, bodyBottom: 75.8,
+    bodyBottomWithLogo: 75.8, bodySide: 11.5,
+    logo: { anchor: "right", right: 10, bottom: 10, maxWidth: 35, maxHeight: 11 },
+  },
 };
+
+const DESIGN_PREFIX = { A: "standard", B: "bar", C: "formal" };
 
 function updateBackground() {
   const orientation = $("#orientation").value; // portrait | landscape
-  const design = $("#designSelect").value; // A | B
-  const isB = design === "B";
+  const design = $("#designSelect").value; // A | B | C
   const orientationKey = orientation === "landscape" ? "horizontal" : "vertical";
-  const variantKey = (isB ? "bar_" : "standard_") + orientationKey;
-  const file = (isB ? "popo_bar_" : "popo_standard_") + orientationKey + ".jpg";
-  $("#previewPage").style.backgroundImage = `url("assets/${file}")`;
+  const variantKey = (DESIGN_PREFIX[design] || "standard") + "_" + orientationKey;
+  $("#previewPage").style.backgroundImage = `url("assets/popo_${variantKey}.jpg")`;
 
   const layout = BACKGROUND_LAYOUTS[variantKey];
   const headingEl = $("#previewHeading");
@@ -277,6 +291,9 @@ function updateBackground() {
   const page = $("#previewPage");
   headingEl.style.top = layout.headingTop + "%";
   headingEl.style.height = layout.headingHeight + "%";
+  const headingSide = (layout.headingSide ?? 12) + "%";
+  headingEl.style.left = headingSide;
+  headingEl.style.right = headingSide;
   const logoBox = layoutLogoBadge(page, layout);
   const bodyBottom = logoBox
     ? Math.min(layout.bodyBottomWithLogo, logoBox.topPercent - 1)
