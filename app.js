@@ -142,6 +142,7 @@ function populateFormatSelect() {
     selectedFormat = fmt;
     dayListState = {};
     emphasizedLines = new Set();
+    applyLayoutMode(fmt);
     renderFieldsForFormat(fmt);
     updatePreview();
   });
@@ -383,6 +384,11 @@ function renderFieldsForFormat(fmt) {
   if (!fmt) {
     container.innerHTML =
       '<p class="hint">フォーマットを選択すると、入力項目がここに表示されます。</p>';
+    return;
+  }
+
+  if (fmt.layout === "nenmatsu") {
+    buildNenmatsuControls(container);
     return;
   }
 
@@ -1031,6 +1037,18 @@ function updatePreview() {
   const bodyTextEl = $("#previewBodyText");
 
   updateBackground();
+  const isNenmatsu = !!selectedFormat && selectedFormat.layout === "nenmatsu";
+  $("#previewPage").dataset.layout = isNenmatsu ? "nenmatsu" : "";
+  $("#nenmatsuPage").hidden = !isNenmatsu;
+  if (isNenmatsu) {
+    $("#previewPage").style.backgroundImage = "none";
+    renderNenmatsu();
+    $("#emphasisControls").textContent = "";
+    textOverflowing = false;
+    fitPreviewScale();
+    updatePrintButtonState();
+    return;
+  }
 
   if (!selectedFormat) {
     headingEl.textContent = "";
@@ -1082,6 +1100,182 @@ function updatePreview() {
   textOverflowing = !headingFit || !bodyFit;
   fitPreviewScale();
   updatePrintButtonState();
+}
+
+// ===== 年末年始 専用レイアウト =====
+// 原紙(年末年始POP【2025】.pptx)の座標を%で再現する。ブランドで配色とロゴが変わる:
+// ポポラマーマ=赤+店名、バル/和ぱすた=紫+ブランドロゴのみ（原紙どおり店名なし）。
+const NM_DAYS = 6;
+const NM_WEEK = ["日", "月", "火", "水", "木", "金", "土"];
+const NM_ROW_Y = [43.6, 49.3, 54.8, 60.5, 66.2, 72.1];
+const NM_BRANDS = {
+  "ポポラマーマ": { color: "#c30d23", logo: "nenmatsu_logo_popo.jpg", store: true,
+    pos: { left: 6.4, top: 2.6, width: 34.5, height: 24.4 } },
+  "ポポラマーマ_バル": { color: "#993366", logo: "nenmatsu_logo_bar.jpg", store: false,
+    pos: { left: 6.0, top: 2.7, width: 25.8, height: 28.3 } },
+  "和ぱすた　ぽぽらまーま": { color: "#993366", logo: "nenmatsu_logo_wa.jpg", store: false,
+    pos: { left: 8.0, top: 2.0, width: 37.2, height: 30.2 } },
+};
+
+function nmDefaultStart() {
+  const now = new Date();
+  const y = now.getMonth() === 0 && now.getDate() <= 7 ? now.getFullYear() - 1 : now.getFullYear();
+  return `${y}-12-29`;
+}
+const nmState = {
+  start: nmDefaultStart(),
+  rows: Array.from({ length: NM_DAYS }, () => ({ mode: "時間指定", from: "11:00", to: "21:00" })),
+};
+
+function nmDate(i) {
+  const d = new Date(nmState.start + "T00:00:00");
+  if (isNaN(d.getTime())) return null;
+  d.setDate(d.getDate() + i);
+  return d;
+}
+
+function nmValueText(row) {
+  if (row.mode === "時間指定") return row.from && row.to ? `${row.from}～${row.to}` : "";
+  return row.mode;
+}
+
+function buildNenmatsuControls(container) {
+  const startWrap = document.createElement("div");
+  startWrap.className = "field-row";
+  const sl = document.createElement("label");
+  sl.textContent = "開始日（この日から6日間）";
+  const si = document.createElement("input");
+  si.type = "date";
+  si.value = nmState.start;
+  startWrap.append(sl, si);
+  container.appendChild(startWrap);
+
+  const dayLabels = [];
+  const refreshDayLabels = () => {
+    dayLabels.forEach((el, i) => {
+      const d = nmDate(i);
+      el.textContent = d ? `${d.getMonth() + 1}/${d.getDate()}（${NM_WEEK[d.getDay()]}）` : "";
+    });
+  };
+  si.addEventListener("input", () => {
+    nmState.start = si.value;
+    refreshDayLabels();
+    updatePreview();
+  });
+
+  nmState.rows.forEach((row) => {
+    const wrap = document.createElement("div");
+    wrap.className = "field-row nm-ctrl-row";
+    const day = document.createElement("span");
+    day.className = "nm-ctrl-day";
+    dayLabels.push(day);
+
+    const sel = document.createElement("select");
+    ["時間指定", "通常営業", "休み"].forEach((m) => {
+      const o = document.createElement("option");
+      o.value = m;
+      o.textContent = m;
+      sel.appendChild(o);
+    });
+    sel.value = row.mode;
+
+    const times = document.createElement("div");
+    times.className = "nm-times";
+    const from = document.createElement("input");
+    from.type = "time";
+    from.value = row.from;
+    const to = document.createElement("input");
+    to.type = "time";
+    to.value = row.to;
+    times.append(from, to);
+    times.style.display = row.mode === "時間指定" ? "flex" : "none";
+
+    sel.addEventListener("change", () => {
+      row.mode = sel.value;
+      times.style.display = row.mode === "時間指定" ? "flex" : "none";
+      updatePreview();
+    });
+    from.addEventListener("input", () => { row.from = from.value; updatePreview(); });
+    to.addEventListener("input", () => { row.to = to.value; updatePreview(); });
+
+    wrap.append(day, sel, times);
+    container.appendChild(wrap);
+  });
+  refreshDayLabels();
+
+  const hint = document.createElement("p");
+  hint.className = "hint";
+  hint.textContent = "配色とロゴは選んだ店舗のブランドで自動的に切り替わります。用紙はA4縦固定です。";
+  container.appendChild(hint);
+}
+
+function nmEl(tag, cls, parent, style) {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  if (style) Object.assign(el.style, style);
+  parent.appendChild(el);
+  return el;
+}
+
+function renderNenmatsu() {
+  const root = $("#nenmatsuPage");
+  root.textContent = "";
+  const brand = getStoreBrand() || "ポポラマーマ";
+  const cfg = NM_BRANDS[brand] || NM_BRANDS["ポポラマーマ"];
+  root.style.setProperty("--nm-main", cfg.color);
+
+  nmEl("div", "nm-bg", root);
+  const circle = nmEl("div", "nm-circle", root);
+  const first = nmDate(0);
+  const y0 = first ? (first.getMonth() === 11 ? first.getFullYear() : first.getFullYear() - 1) : 0;
+  nmEl("div", "yr", circle).textContent = y0 ? `${y0}～${y0 + 1}` : "";
+  ["年末年始", "営業時間の", "お知らせ"].forEach((t) => {
+    nmEl("div", "tt", circle).textContent = t;
+  });
+
+  const logo = nmEl("img", "nm-logo", root, {
+    left: cfg.pos.left + "%", top: cfg.pos.top + "%",
+    width: cfg.pos.width + "%", height: cfg.pos.height + "%",
+  });
+  logo.src = "assets/" + cfg.logo;
+  logo.alt = "";
+  if (cfg.store && $("#storeSelect").value) {
+    nmEl("div", "nm-store", root).textContent = $("#storeSelect").value;
+  }
+
+  nmEl("div", "nm-box", root);
+  nmState.rows.forEach((row, i) => {
+    const d = nmDate(i);
+    const r = nmEl("div", "nm-row", root, { top: NM_ROW_Y[i] + "%" });
+    nmEl("span", "nm-num", r).textContent = d ? `${d.getMonth() + 1}/${d.getDate()}` : "";
+    nmEl("span", "nm-wd", r).textContent = d ? `（${NM_WEEK[d.getDay()]}）` : "";
+    nmEl("span", "nm-arrow", r);
+    const v = nmEl("span", "nm-val" + (row.mode === "休み" ? " off" : row.mode === "通常営業" ? " word" : ""), r);
+    v.textContent = nmValueText(row);
+  });
+
+  const glass = nmEl("img", "nm-glass", root);
+  glass.src = "assets/nenmatsu_glass.png";
+  glass.alt = "";
+  const msg = nmEl("div", "nm-msg", root);
+  const y1 = y0 ? y0 + 1 : "";
+  [`${y0 || ""}年は格別のご厚情を賜り、`, "厚く御礼申し上げます。",
+   `${y1}年もスタッフ一同、皆様にご満足いただける`, "サービスを心がける所存でございますので、",
+   "何とぞ変わらぬご愛顧を賜りますよう、", "お願い申し上げます。"].forEach((t) => {
+    nmEl("div", "", msg).textContent = t;
+  });
+}
+
+// 専用レイアウトはA4縦固定。向き・デザイン・ロゴの選択は無効にして誤操作を防ぐ。
+function applyLayoutMode(fmt) {
+  const fixed = !!fmt && fmt.layout === "nenmatsu";
+  ["#orientation", "#designSelect", "#logoSelect"].forEach((sel) => {
+    $(sel).disabled = fixed;
+  });
+  if (fixed && $("#orientation").value !== "portrait") {
+    $("#orientation").value = "portrait";
+    updatePaperSize();
+  }
 }
 
 function mirrorBracket(b) {

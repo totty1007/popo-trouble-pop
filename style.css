@@ -360,6 +360,46 @@ textarea { resize: vertical; }
 }
 /* 強調する行の指定パネル（印刷対象外） */
 #emphasisControls:empty { display: none; }
+
+/* ===== 年末年始 専用レイアウト（A4縦固定・座標は原紙pptxの実測%） ===== */
+.preview-page[data-layout="nenmatsu"] .preview-heading,
+.preview-page[data-layout="nenmatsu"] .preview-body,
+.preview-page[data-layout="nenmatsu"] .preview-logo-badge { display: none !important; }
+.nm-page[hidden] { display: none; }
+.nm-page {
+  position: absolute; inset: 0; overflow: hidden; text-align: left;
+  font-family: "BIZ UDPGothic", "Yu Gothic Medium", "Yu Gothic", "Meiryo", sans-serif;
+  --nm-main: #c30d23;
+}
+.nm-page > * { position: absolute; }
+.nm-bg { inset: 0; background: linear-gradient(to bottom right, #fff 50%, var(--nm-main) 50%); }
+.nm-circle {
+  left: 47.4%; top: 2.2%; width: 44.3%; height: 30.9%; border-radius: 50%;
+  background: #a50021; color: #fff; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.nm-circle .yr { font-family: Sylfaen, "Times New Roman", serif; font-weight: 700; font-size: 26.7px; line-height: 1.3; }
+.nm-circle .tt { font-size: 58.7px; line-height: 1.12; }
+.nm-box { left: 4.9%; top: 35.8%; width: 90.9%; height: 41.9%; background: #fff; border: 8px solid #bf9000; box-sizing: border-box; }
+.nm-row { left: 0; right: 0; height: 0; }
+.nm-row > * { position: absolute; top: 0; transform: translateY(-50%); white-space: nowrap; color: #c00000; }
+.nm-num { left: 7.9%; width: 17.6%; text-align: center; font-size: 53px; }
+.nm-wd { left: 30.5%; font-size: 53px; }
+.nm-arrow { left: 48.1%; width: 0; height: 0; border-left: 31px solid #bf9000; border-top: 17px solid transparent; border-bottom: 17px solid transparent; }
+.nm-val { left: 55%; width: 39%; text-align: center; font-size: 42.7px; }
+.nm-val.word { font-size: 48px; }
+.nm-val.off { font-size: 53px; }
+.nm-store { left: 6%; top: 29.2%; font-size: 37px; font-weight: 700; color: #111; }
+.nm-logo { object-fit: contain; }
+.nm-glass { left: -6.7%; top: 76.1%; width: 28.3%; }
+.nm-msg { left: 20.9%; top: 80.6%; width: 75.4%; font-size: 26.7px; line-height: 1.2; color: #fff; }
+.nm-msg div { white-space: nowrap; }
+
+/* 年末年始パネル（入力欄） */
+.nm-ctrl-row { display: grid; grid-template-columns: 5.2em 1fr; gap: 6px; align-items: center; }
+.nm-ctrl-row .nm-times { display: flex; gap: 4px; grid-column: 2; }
+.nm-ctrl-row .nm-times input { min-width: 0; }
+.nm-ctrl-day { font-weight: 600; font-size: 13px; }
 .emphasis-list {
   display: flex;
   flex-direction: column;

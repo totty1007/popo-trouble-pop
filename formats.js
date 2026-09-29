@@ -37,6 +37,18 @@ const FORMATS = [
     ],
     body: "{{customBody}}",
   },
+  // ───────────── 年末年始 ─────────────
+  // 専用レイアウト（app.jsのrenderNenmatsu）。見出し・本文の穴埋めではなく、
+  // 日付ごとの営業時間表を描く。ブランドで配色とロゴが変わる。
+  {
+    id: "nenmatsu_hours",
+    category: "年末年始",
+    title: "年末年始 営業時間のお知らせ（日付ごとの営業時間表）",
+    layout: "nenmatsu",
+    noDesign: true,
+    fields: [],
+    body: "",
+  },
   // ───────────── 天候対応 ─────────────
   {
     id: "weather_advance_notice",
