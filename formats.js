@@ -210,7 +210,7 @@ const FORMATS = [
     category: "座席・混雑対応",
     title: "ウェイティング用紙のご案内（お席をお待ちのお客様へ）",
     bracket: "【",
-    heading: "お席をお待ちのお客様へ",
+    heading: "お待ちのお客様へ",
     fields: [],
     body:
       GREETING +

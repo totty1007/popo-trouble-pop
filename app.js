@@ -1073,7 +1073,9 @@ function updatePreview() {
 
   const plainBody = stripEm(bodyText);
   let bodyCap = Math.min(bodyCapForLength(plainBody.replace(/\s/g, "").length), headingSize - 8);
-  bodyCap = Math.max(bodyCap, 24); // 見出し連動で小さくしすぎない
+  // 見出しは1行に収めるため長い見出しは小さくなる。本文まで巻き込んで縮むと
+  // 文字が小さすぎるので、文字数から決めた上限の範囲で最低36pxは確保する。
+  bodyCap = Math.max(bodyCap, Math.min(36, bodyCapForLength(plainBody.replace(/\s/g, "").length)));
   bodyCap = Math.min(bodyCap, widthCapFor(plainBody, bodyEl.clientWidth));
   bodyCap = Math.max(bodyCap, BODY_MIN_SIZE);
   const bodyFit = fitTextToBox(bodyEl, bodyTextEl, bodyCap, BODY_MIN_SIZE, bodyLineHeight);
