@@ -222,7 +222,7 @@ const FORMATS = [
     category: "座席・混雑対応",
     title: "お待ちなしのご案内（ウェイティング用紙不要）",
     bracket: "【",
-    heading: "ご来店ありがとうございます",
+    heading: "お待ちなしでご案内",
     fields: [],
     body:
       GREETING +
@@ -234,7 +234,7 @@ const FORMATS = [
     category: "座席・混雑対応",
     title: "列整理のご案内（階段で並ぶ場合）",
     bracket: "【",
-    heading: "列の最後尾は階段です",
+    heading: "最後尾は階段です",
     fields: [],
     body:
       GREETING +
@@ -246,7 +246,7 @@ const FORMATS = [
     category: "座席・混雑対応",
     title: "テーブル利用ルール（人数に応じた分割案内）",
     bracket: "【",
-    heading: "席のご案内についてのお願い",
+    heading: "お願い",
     fields: [
       { key: "smallGroupText", label: "少人数の場合の案内文", type: "text", default: "2名様・3名様に分かれて、または4名席にお詰めいただいてのご案内となります。" },
       { key: "smallGroupSize", label: "少人数の基準（〜名様の場合）", type: "text", default: "5" },
@@ -254,6 +254,7 @@ const FORMATS = [
     ],
     body:
       GREETING +
+      "席のご案内についてお願いがございます。\n" +
       "当店では消防法に基づく安全管理の観点から、テーブル同士をつなげてご利用いただくことはできません。\n" +
       "恐れ入りますが、以下の通りご案内させていただいております。\n" +
       "{{smallGroupSize}}名様の場合：{{smallGroupText}}\n" +
@@ -267,7 +268,7 @@ const FORMATS = [
     category: "座席・混雑対応",
     title: "テラス席運用変更のお知らせ",
     bracket: "〈",
-    heading: "テラス席運用変更のお知らせ",
+    heading: "お知らせ",
     fields: [
       {
         key: "reason",
@@ -417,7 +418,7 @@ const FORMATS = [
     category: "メニュー・サービス",
     title: "テイクアウト販売終了のお知らせ",
     bracket: "〈",
-    heading: "テイクアウト終了のお知らせ",
+    heading: "お知らせ",
     fields: [
       { key: "endDate", label: "終了時期（例：2025年12月より）", type: "text" },
     ],
@@ -446,8 +447,8 @@ const FORMATS = [
     id: "lunch_time_change",
     category: "メニュー・サービス",
     title: "ランチ提供時間変更のお知らせ",
-    bracket: "",
-    heading: "ランチセット提供時間変更のお知らせ",
+    bracket: "〈",
+    heading: "お知らせ",
     fields: [
       { key: "effectiveDate", label: "適用開始日", type: "date" },
       { key: "beforeTime", label: "変更前の提供時間", type: "text", default: "11:00〜15:00" },

@@ -1062,10 +1062,12 @@ function updatePreview() {
 
   // 見出しを先に確定し、そのサイズを本文の上限に反映する。独立に決めると
   // 「本文44px・見出し42px」のように大小関係が逆転して情報の階層が崩れる。
-  const headingMax = Math.min(
-    HEADING_MAX_SIZE,
-    widthCapFor(headingText, headingEl.clientWidth)
-  );
+  // 自由入力の見出しだけ折り返しを許し、それ以外は1行に収まるまで縮める
+  const wrapHeading = !!selectedFormat.dynamicHeading;
+  headingEl.classList.toggle("wrap", wrapHeading);
+  const headingMax = wrapHeading
+    ? Math.min(HEADING_MAX_SIZE, widthCapFor(headingText, headingEl.clientWidth))
+    : HEADING_MAX_SIZE;
   const headingFit = fitTextToBox(headingEl, headingEl, headingMax, HEADING_MIN_SIZE);
   const headingSize = heading ? parseFloat(headingEl.style.fontSize) : Infinity;
 

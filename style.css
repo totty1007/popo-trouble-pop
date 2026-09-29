@@ -228,9 +228,15 @@ textarea { resize: vertical; }
      2行見出しが見出し帯に入らず不要に自動縮小される。1.2 を明示する。 */
   line-height: 1.2;
   overflow: hidden;
-  /* 見出しも文節境界だけで折り返す（本文と同じ規則） */
+  /* 見出しは1行で収める。収まらない時は折り返さず文字サイズを縮める
+     （【お詫びと／お願い】のように括弧の中で改行されるのを防ぐ）。
+     自由入力の見出しだけ .wrap を付けて折り返しを許す。 */
+  white-space: nowrap;
   word-break: keep-all;
   overflow-wrap: normal;
+}
+.preview-heading.wrap {
+  white-space: normal;
   text-wrap: balance;
 }
 
