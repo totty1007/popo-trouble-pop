@@ -14,6 +14,29 @@ const CHANGE_TYPE_OPTIONS = [
 ];
 
 const FORMATS = [
+  // ───────────── 自由作成 ─────────────
+  // 定型文・挨拶・店舗名を一切付けず、見出しと本文を入力したまま印字する。
+  {
+    id: "free_full",
+    category: "自由作成",
+    title: "完全フリー（見出し・本文をすべて自由入力）",
+    bracket: "",
+    heading: "",
+    noStore: true,
+    allowEmptyHeading: true,
+    dynamicHeading: true,
+    fields: [
+      { key: "customHeading", label: "見出し（空欄なら見出しなし）", type: "text", default: "", optional: true },
+      {
+        key: "customBody",
+        label: "本文（改行はそのまま反映されます）",
+        type: "textarea",
+        default: "",
+        rows: 10,
+      },
+    ],
+    body: "{{customBody}}",
+  },
   // ───────────── 天候対応 ─────────────
   {
     id: "weather_advance_notice",
@@ -181,6 +204,30 @@ const FORMATS = [
       GREETING +
       "本日はスタッフ体制の都合により、ご案内・お料理のご提供にお時間をいただく場合がございます。\n" +
       "ご不便をおかけし申し訳ございません。何卒ご理解のほどよろしくお願いいたします。",
+  },
+  {
+    id: "waiting_sheet_guide",
+    category: "座席・混雑対応",
+    title: "ウェイティング用紙のご案内（お席をお待ちのお客様へ）",
+    bracket: "【",
+    heading: "お席をお待ちのお客様へ",
+    fields: [],
+    body:
+      GREETING +
+      "ウェイティング用紙にお名前・人数をご記入のうえ、こちらでお待ちください。\n" +
+      "お席のご用意ができ次第、順次ご案内させていただきます。",
+  },
+  {
+    id: "no_wait_guide",
+    category: "座席・混雑対応",
+    title: "お待ちなしのご案内（ウェイティング用紙不要）",
+    bracket: "【",
+    heading: "ご来店ありがとうございます",
+    fields: [],
+    body:
+      GREETING +
+      "ただいまお待ちいただかずにご案内できます。\n" +
+      "ウェイティング用紙は書かずに、そのままお入りください。",
   },
   {
     id: "stair_queue_guide",

@@ -220,6 +220,9 @@ function updatePaperSize() {
 //  - logo: 縦は右下がトマト/ワインの大型イラストで空きが無いため「下中央」、
 //          横は右下に空きがあるため「右下」。いずれも装飾との重なり0%。枠は縦横比で
 //          形が変わる（縦向きは横長ロゴ用56%x11%と縦長ロゴ用20%x17%の2種）。
+//  - headingSide: 見出しの左右マージン(%)。数値=左右同じ、[左,右]=個別。A/Bは見出し帯の
+//              両端に角のイラストが張り出しており、12%だと長い題名が重なるため、
+//              画素解析で求めた「装飾のない横幅」(A縦24.4-74.8%など)に合わせて狭めている。
 //  - bodyTop: 見出し帯直下の飾り罫の下端を実測して決めた値。A縦は17-18%に、
 //             横2枚は25-31%に横罫があり、そこを越えた位置から本文を始める。
 //             B縦だけは21-31%に飾りが散っているため下げたまま。
@@ -239,24 +242,24 @@ const BRAND_SEPARATOR = {
 
 const BACKGROUND_LAYOUTS = {
   standard_vertical: {
-    headingTop: 4.8, headingHeight: 11, bodyTop: 20, bodyBottom: 78,
+    headingTop: 4.8, headingHeight: 11, headingSide: [25, 25.5], bodyTop: 20, bodyBottom: 78,
     bodyBottomWithLogo: 78, bodySide: 17,
     logo: { anchor: "center", bottom: 10, maxWidth: 56, maxHeight: 11,
             tall: { anchor: "center", bottom: 4, maxWidth: 20, maxHeight: 17 } },
   },
   standard_horizontal: {
-    headingTop: 9, headingHeight: 13, bodyTop: 37, bodyBottom: 92,
+    headingTop: 9, headingHeight: 13, headingSide: [26.5, 26.5], bodyTop: 37, bodyBottom: 92,
     bodyBottomWithLogo: 88, bodySide: 12,
     logo: { anchor: "right", right: 13, bottom: 4, maxWidth: 74, maxHeight: 16 },
   },
   bar_vertical: {
-    headingTop: 4.8, headingHeight: 9, bodyTop: 32, bodyBottom: 78,
+    headingTop: 4.8, headingHeight: 9, headingSide: [21, 20.5], bodyTop: 32, bodyBottom: 78,
     bodyBottomWithLogo: 78, bodySide: 17,
     logo: { anchor: "center", bottom: 10, maxWidth: 56, maxHeight: 11,
             tall: { anchor: "center", bottom: 4, maxWidth: 20, maxHeight: 17 } },
   },
   bar_horizontal: {
-    headingTop: 10, headingHeight: 13, bodyTop: 33, bodyBottom: 90,
+    headingTop: 10, headingHeight: 13, headingSide: [22.5, 22], bodyTop: 33, bodyBottom: 90,
     bodyBottomWithLogo: 88, bodySide: 12,
     logo: { anchor: "right", right: 13, bottom: 4, maxWidth: 74, maxHeight: 16 },
   },
@@ -269,6 +272,18 @@ const BACKGROUND_LAYOUTS = {
     bodyBottomWithLogo: 88.3, bodySide: 13,
     logo: { anchor: "center", bottom: 11.5, maxWidth: 50, maxHeight: 8 },
   },
+  // デザインD（ウォーターマーク）は白地の中央に薄いロゴだけがある。装飾が無いので
+  // 見出し・本文は広く使える。ロゴが薄い透かしなので本文はその上に重ねてよい。
+  watermark_vertical: {
+    headingTop: 6, headingHeight: 9, headingSide: 8, bodyTop: 20, bodyBottom: 90,
+    bodyBottomWithLogo: 86, bodySide: 10,
+    logo: { anchor: "center", bottom: 4, maxWidth: 50, maxHeight: 8 },
+  },
+  watermark_horizontal: {
+    headingTop: 5.6, headingHeight: 9.1, headingSide: 7.7, bodyTop: 20, bodyBottom: 92,
+    bodyBottomWithLogo: 86, bodySide: 9,
+    logo: { anchor: "right", right: 5, bottom: 4, maxWidth: 35, maxHeight: 12 },
+  },
   formal_horizontal: {
     headingTop: 15, headingHeight: 7.4, headingSide: 11, bodyTop: 32, bodyBottom: 86.8,
     bodyBottomWithLogo: 86.8, bodySide: 10.3,
@@ -276,13 +291,14 @@ const BACKGROUND_LAYOUTS = {
   },
 };
 
-const DESIGN_PREFIX = { A: "standard", B: "bar", C: "formal" };
+const DESIGN_PREFIX = { A: "standard", B: "bar", C: "formal", D: "watermark" };
 
 function updateBackground() {
   const orientation = $("#orientation").value; // portrait | landscape
   const design = $("#designSelect").value; // A | B | C
   const orientationKey = orientation === "landscape" ? "horizontal" : "vertical";
   const variantKey = (DESIGN_PREFIX[design] || "standard") + "_" + orientationKey;
+  $("#previewPage").dataset.design = design;
   $("#previewPage").style.backgroundImage = `url("assets/popo_${variantKey}.jpg")`;
 
   const layout = BACKGROUND_LAYOUTS[variantKey];
@@ -291,9 +307,9 @@ function updateBackground() {
   const page = $("#previewPage");
   headingEl.style.top = layout.headingTop + "%";
   headingEl.style.height = layout.headingHeight + "%";
-  const headingSide = (layout.headingSide ?? 12) + "%";
-  headingEl.style.left = headingSide;
-  headingEl.style.right = headingSide;
+  const [headingLeft, headingRight] = [].concat(layout.headingSide ?? 12, layout.headingSide ?? 12);
+  headingEl.style.left = headingLeft + "%";
+  headingEl.style.right = headingRight + "%";
   const logoBox = layoutLogoBadge(page, layout);
   const bodyBottom = logoBox
     ? Math.min(layout.bodyBottomWithLogo, logoBox.topPercent - 1)
@@ -618,7 +634,7 @@ function validateFields(fmt) {
 function updatePrintButtonState() {
   const btn = $("#printBtn");
   const hint = $("#printHint");
-  const storeOk = !!$("#storeSelect").value;
+  const storeOk = !!$("#storeSelect").value || !!(selectedFormat && selectedFormat.noStore);
   const fieldsOk = validateFields(selectedFormat);
   const ready = storeOk && !!selectedFormat && fieldsOk && !textOverflowing;
 
@@ -795,6 +811,8 @@ function canBreakBefore(text, i) {
   if (isInsidePhrase(text, i)) return false;
   // 「・9月15日（火）」のような箇条書きの先頭の中黒は、行末に取り残さない
   if (prev === "・" && i === 1) return false;
+  // 「ご来店｜ありがとうございます」のように漢字の直後でも、感謝の決まり文句の前は切れ目
+  if (text.startsWith("ありがとう", i)) return true;
   if (RE_BREAK_AFTER.test(prev)) return true; // 句読点・中黒の後は切れる
   if (!RE_HIRAGANA.test(prev)) return false; // 熟語・カタカナ語の途中では切らない
   if (RE_HONORIFIC.test(prev)) return false; // 「ご|理解」「お|願い」を防ぐ
@@ -1031,7 +1049,9 @@ function updatePreview() {
 
   let heading = selectedFormat.heading;
   if (selectedFormat.dynamicHeading) {
-    heading = values.customHeading || "お知らせ";
+    heading = selectedFormat.allowEmptyHeading
+      ? (values.customHeading || "").trim()
+      : values.customHeading || "お知らせ";
   }
   const bracket = selectedFormat.bracket;
   const headingText = heading ? `${bracket}${heading}${mirrorBracket(bracket)}` : "";

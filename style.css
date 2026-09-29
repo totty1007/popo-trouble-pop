@@ -211,6 +211,9 @@ textarea { resize: vertical; }
 .preview-page.a4-fixed.portrait { width: 210mm; height: 297mm; }
 .preview-page.a4-fixed.landscape { width: 297mm; height: 210mm; }
 
+/* デザインD: 見出しは原紙どおりのえんじ色 */
+.preview-page[data-design="D"] .preview-heading { color: #6b1518; }
+
 .preview-heading {
   position: absolute;
   left: 12%;
