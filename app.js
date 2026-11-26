@@ -1127,8 +1127,10 @@ function nmDefaultStart() {
 const NM_LOGO_CHOICES = [
   { value: "", label: "ブランド標準（自動）" },
   { value: "logo_popo_new_stacked.png", label: "ポポラマーマ 新ロゴ（縦）" },
-  { value: "logo_popo_new_wide.png", label: "ポポラマーマ 新ロゴ（横）" },
 ];
+// 新ロゴ（縦）は店名の真上に左揃えで寄せ、ロゴ〜店名の間の空きを詰める
+const NM_NEW_LOGO_POS = { left: 6, top: 2, width: 38, height: 26.2 };
+const NM_NEW_STORE_TOP = 29.2;
 const nmState = {
   logo: "",
   start: nmDefaultStart(),
@@ -1257,15 +1259,22 @@ function renderNenmatsu() {
     nmEl("div", "tt", circle).textContent = t;
   });
 
+  const pos = nmState.logo ? NM_NEW_LOGO_POS : cfg.pos;
   const logo = nmEl("img", "nm-logo", root, {
-    left: cfg.pos.left + "%", top: cfg.pos.top + "%",
-    width: cfg.pos.width + "%", height: cfg.pos.height + "%",
+    left: pos.left + "%", top: pos.top + "%",
+    width: pos.width + "%", height: pos.height + "%",
   });
   logo.src = "assets/" + (nmState.logo || cfg.logo);
-  logo.style.objectPosition = nmState.logo ? "left top" : "";
+  logo.style.objectPosition = nmState.logo ? "left bottom" : "";
   logo.alt = "";
   if (cfg.store && $("#storeSelect").value) {
-    nmEl("div", "nm-store", root).textContent = $("#storeSelect").value;
+    const st = nmEl("div", "nm-store", root, nmState.logo ? { top: NM_NEW_STORE_TOP + "%" } : null);
+    st.textContent = $("#storeSelect").value;
+    st.style.whiteSpace = "nowrap";
+    // 長い店名が右の赤い斜め帯・円にかからないよう、左端から幅45%以内に収まるまで縮小
+    const maxW = root.offsetWidth * 0.45;
+    let fs = parseFloat(getComputedStyle(st).fontSize);
+    while (st.offsetWidth > maxW && fs > 16) { fs -= 1; st.style.fontSize = fs + "px"; }
   }
 
   nmEl("div", "nm-box", root);
