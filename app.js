@@ -20,7 +20,9 @@ const NO_AREA_LABEL = "エリア未設定・その他";
 
 const LOGO_OPTIONS = [
   { value: "", label: "ロゴなし（表示しない）" },
-  { value: "logo_popo_illustration.png", label: "ポポラマーマ（イラスト）" },
+  { value: "logo_popo_new_stacked.png", label: "ポポラマーマ 新ロゴ（縦）" },
+  { value: "logo_popo_new_wide.png", label: "ポポラマーマ 新ロゴ（横）" },
+  { value: "logo_popo_illustration.png", label: "ポポラマーマ（イラスト）旧" },
   { value: "logo_popo_text.jpg", label: "ポポラマーマ（文字のみ）" },
   { value: "logo_popo_badge.png", label: "ポポラマーマ（丸バッジ）" },
   { value: "logo_bar_horizontal.jpg", label: "ポポラマーマ_バル（横）" },
