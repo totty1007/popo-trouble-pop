@@ -1124,7 +1124,13 @@ function nmDefaultStart() {
   const y = now.getMonth() === 0 && now.getDate() <= 7 ? now.getFullYear() - 1 : now.getFullYear();
   return `${y}-12-29`;
 }
+const NM_LOGO_CHOICES = [
+  { value: "", label: "ブランド標準（自動）" },
+  { value: "logo_popo_new_stacked.png", label: "ポポラマーマ 新ロゴ（縦）" },
+  { value: "logo_popo_new_wide.png", label: "ポポラマーマ 新ロゴ（横）" },
+];
 const nmState = {
+  logo: "",
   start: nmDefaultStart(),
   rows: Array.from({ length: NM_DAYS }, () => ({ mode: "時間指定", from: "11:00", to: "21:00" })),
 };
@@ -1151,6 +1157,22 @@ function buildNenmatsuControls(container) {
   si.value = nmState.start;
   startWrap.append(sl, si);
   container.appendChild(startWrap);
+
+  const logoWrap = document.createElement("div");
+  logoWrap.className = "field-row";
+  const ll = document.createElement("label");
+  ll.textContent = "ロゴ";
+  const ls = document.createElement("select");
+  NM_LOGO_CHOICES.forEach((c) => {
+    const o = document.createElement("option");
+    o.value = c.value;
+    o.textContent = c.label;
+    ls.appendChild(o);
+  });
+  ls.value = nmState.logo;
+  ls.addEventListener("change", () => { nmState.logo = ls.value; updatePreview(); });
+  logoWrap.append(ll, ls);
+  container.appendChild(logoWrap);
 
   const dayLabels = [];
   const refreshDayLabels = () => {
@@ -1207,7 +1229,7 @@ function buildNenmatsuControls(container) {
 
   const hint = document.createElement("p");
   hint.className = "hint";
-  hint.textContent = "配色とロゴは選んだ店舗のブランドで自動的に切り替わります。用紙はA4縦固定です。";
+  hint.textContent = "配色は選んだ店舗のブランドで自動的に切り替わります。ロゴは上で選べます（標準はブランドに合わせて自動）。用紙はA4縦固定です。";
   container.appendChild(hint);
 }
 
@@ -1239,7 +1261,8 @@ function renderNenmatsu() {
     left: cfg.pos.left + "%", top: cfg.pos.top + "%",
     width: cfg.pos.width + "%", height: cfg.pos.height + "%",
   });
-  logo.src = "assets/" + cfg.logo;
+  logo.src = "assets/" + (nmState.logo || cfg.logo);
+  logo.style.objectPosition = nmState.logo ? "left top" : "";
   logo.alt = "";
   if (cfg.store && $("#storeSelect").value) {
     nmEl("div", "nm-store", root).textContent = $("#storeSelect").value;
